@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bun run src/index.tsx",
     "build": "bun run scripts/build.ts",
+    "install-bin": "bun run build && sudo cp -f repolens /usr/local/bin/repolens",
     "typecheck": "bunx tsc --noEmit"
   },
   "dependencies": {
