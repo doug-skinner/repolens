@@ -1,12 +1,13 @@
 import { Box, Text } from "ink";
-import type { RepoInfo } from "../lib/types.js";
+import { VIEWS, VIEW_LABELS, type View, type RepoInfo } from "../lib/types.js";
 
 interface HeaderProps {
   repo: RepoInfo | null;
   prCount: number;
+  activeView: View;
 }
 
-export function Header({ repo, prCount }: HeaderProps) {
+export function Header({ repo, prCount, activeView }: HeaderProps) {
   return (
     <Box
       flexDirection="column"
@@ -27,8 +28,15 @@ export function Header({ repo, prCount }: HeaderProps) {
           {prCount} open PR{prCount !== 1 ? "s" : ""}
         </Text>
       </Box>
+      <Box gap={1}>
+        {VIEWS.map((view, i) => (
+          <Text key={view} bold={view === activeView} color={view === activeView ? "cyan" : undefined} dimColor={view !== activeView}>
+            {i + 1}:{VIEW_LABELS[view]}
+          </Text>
+        ))}
+      </Box>
       <Text dimColor>
-        ↑↓ navigate · enter open in browser · r refresh · q quit
+        tab/shift+tab switch view · 1-5 jump to view · ↑↓ navigate · enter open · r refresh · q quit
       </Text>
     </Box>
   );
