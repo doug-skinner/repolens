@@ -16,8 +16,8 @@ const checkBadges: Record<CheckSummary, () => React.JSX.Element> = {
 
 const reviewLabels: Record<string, () => React.JSX.Element> = {
   APPROVED: () => <Text color="green">✓ approved</Text>,
-  CHANGES_REQUESTED: () => <Text color="red">✗ changes</Text>,
-  REVIEW_REQUIRED: () => <Text color="yellow">● review</Text>,
+  CHANGES_REQUESTED: () => <Text color="red">✗ changes </Text>,
+  REVIEW_REQUIRED: () => <Text color="yellow">● review  </Text>,
 };
 
 export function CheckBadge({ summary }: { summary: CheckSummary }) {
@@ -27,6 +27,6 @@ export function CheckBadge({ summary }: { summary: CheckSummary }) {
 
 export function ReviewBadge({ decision }: { decision: string }) {
   const Badge = reviewLabels[decision];
-  if (!Badge) return <Text dimColor>— review</Text>;
+  if (!Badge) return <Text dimColor>— review  </Text>;
   return <Badge />;
 }
