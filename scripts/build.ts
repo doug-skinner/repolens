@@ -2,9 +2,16 @@ import { $ } from "bun";
 import { mkdirSync, writeFileSync, renameSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import { parseArgs } from "util";
 
-// Shim react-devtools-core — Ink optionally imports it for DEV mode,
-// but the bundler resolves the import statically.
+const { values } = parseArgs({
+  args: process.argv.slice(2),
+  options: {
+    target: { type: "string" },
+    output: { type: "string", default: "repolens" },
+  },
+});
+
 mkdirSync("node_modules/react-devtools-core", { recursive: true });
 writeFileSync(
   "node_modules/react-devtools-core/package.json",
@@ -19,20 +26,28 @@ writeFileSync(
   "export default { connectToDevTools() {} };\n"
 );
 
-// Build into a temp directory to avoid .bun-build artifacts in the project root.
 const buildDir = join(tmpdir(), `repolens-build-${Date.now()}`);
 mkdirSync(buildDir, { recursive: true });
 const outpath = join(buildDir, "repolens");
 
 const root = process.cwd();
-await $`bun build --compile ${join(root, "src/index.tsx")} --outfile ${outpath}`.cwd(buildDir);
+const entry = join(root, "src/index.tsx");
+const targetArgs = values.target ? ["--target", values.target] : [];
 
-if (process.platform === "darwin") {
+await $`bun build --compile ${targetArgs} ${entry} --outfile ${outpath}`.cwd(
+  buildDir
+);
+
+const isDarwinTarget = values.target
+  ? values.target.includes("darwin")
+  : process.platform === "darwin";
+
+if (isDarwinTarget && process.platform === "darwin") {
   await $`codesign --remove-signature ${outpath}`.quiet().nothrow();
   await $`codesign --sign - ${outpath}`;
 }
 
-renameSync(outpath, "repolens");
+renameSync(outpath, values.output!);
 rmSync(buildDir, { recursive: true, force: true });
 
-console.log("Build complete: ./repolens");
+console.log(`Build complete: ./${values.output}`);
