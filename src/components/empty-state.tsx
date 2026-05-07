@@ -1,9 +1,13 @@
 import { Box, Text } from "ink";
 
-export function EmptyState() {
+interface EmptyStateProps {
+  message: string;
+}
+
+export function EmptyState({ message }: EmptyStateProps) {
   return (
     <Box paddingY={1} paddingX={2}>
-      <Text dimColor>No open pull requests</Text>
+      <Text dimColor>{message}</Text>
     </Box>
   );
 }

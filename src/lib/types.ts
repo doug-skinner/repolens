@@ -38,6 +38,15 @@ export interface RepoInfo {
   branch: string;
 }
 
+export interface Issue {
+  number: number;
+  title: string;
+  author: { login: string };
+  labels: Label[];
+  createdAt: string;
+  url: string;
+}
+
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";
 
 export const VIEWS = ["prs", "issues", "actions", "milestones", "releases"] as const;

@@ -4,10 +4,11 @@ import { VIEWS, VIEW_LABELS, type View, type RepoInfo } from "../lib/types.js";
 interface HeaderProps {
   repo: RepoInfo | null;
   prCount: number;
+  issueCount: number;
   activeView: View;
 }
 
-export function Header({ repo, prCount, activeView }: HeaderProps) {
+export function Header({ repo, prCount, issueCount, activeView }: HeaderProps) {
   return (
     <Box
       flexDirection="column"
@@ -25,7 +26,7 @@ export function Header({ repo, prCount, activeView }: HeaderProps) {
           </Text>
         )}
         <Text dimColor>
-          {prCount} open PR{prCount !== 1 ? "s" : ""}
+          {prCount} PR{prCount !== 1 ? "s" : ""} · {issueCount} issue{issueCount !== 1 ? "s" : ""}
         </Text>
       </Box>
       <Box gap={1}>

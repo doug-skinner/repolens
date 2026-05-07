@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import type { PullRequest, RepoInfo } from "./types.js";
+import type { Issue, PullRequest, RepoInfo } from "./types.js";
 
 const PR_FIELDS = [
   "number",
@@ -39,4 +39,23 @@ export async function fetchRepoInfo(): Promise<RepoInfo> {
 
 export async function openPrInBrowser(number: number): Promise<void> {
   await $`gh pr view ${number} --web`.quiet();
+}
+
+const ISSUE_FIELDS = [
+  "number",
+  "title",
+  "author",
+  "labels",
+  "createdAt",
+  "url",
+].join(",");
+
+export async function fetchIssues(): Promise<Issue[]> {
+  const result =
+    await $`gh issue list --json ${ISSUE_FIELDS} --limit 30`.quiet();
+  return result.json();
+}
+
+export async function openIssueInBrowser(number: number): Promise<void> {
+  await $`gh issue view ${number} --web`.quiet();
 }
