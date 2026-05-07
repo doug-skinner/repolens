@@ -13,13 +13,15 @@ export function PrRow({ pr, selected }: PrRowProps) {
   return (
     <Box gap={1}>
       <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
-      <Text dimColor>
-        <Link url={pr.url}>#{pr.number}</Link>
-      </Text>
+      <Box width={6}>
+        <Text dimColor>
+          <Link url={pr.url}>#{pr.number}</Link>
+        </Text>
+      </Box>
       <Box width={44}>
         <Text bold={selected} wrap="truncate">
           {pr.isDraft ? <Text dimColor>[draft] </Text> : null}
-          {truncate(pr.title, 42)}
+          {truncate(pr.title, pr.isDraft ? 34 : 42)}
         </Text>
       </Box>
       <Box width={14}>
@@ -32,9 +34,15 @@ export function PrRow({ pr, selected }: PrRowProps) {
           {truncate(pr.headRefName, 18)}
         </Text>
       </Box>
-      <CheckBadge summary={summarizeChecks(pr.statusCheckRollup)} />
-      <ReviewBadge decision={pr.reviewDecision} />
-      <Text dimColor>{timeAgo(pr.createdAt)}</Text>
+      <Box width={9}>
+        <CheckBadge summary={summarizeChecks(pr.statusCheckRollup)} />
+      </Box>
+      <Box width={11}>
+        <ReviewBadge decision={pr.reviewDecision} />
+      </Box>
+      <Box width={9}>
+        <Text dimColor>{timeAgo(pr.createdAt)}</Text>
+      </Box>
     </Box>
   );
 }
