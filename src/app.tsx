@@ -1,4 +1,4 @@
-import { Box, Text } from "ink";
+import { Box, Text, useInput, useApp } from "ink";
 import Spinner from "ink-spinner";
 import { Header } from "./components/header.js";
 import { PrList } from "./components/pr-list.js";
@@ -7,8 +7,14 @@ import { usePullRequests } from "./hooks/use-pull-requests.js";
 import { useRepoInfo } from "./hooks/use-repo-info.js";
 
 export function App() {
+  const { exit } = useApp();
   const { prs, loading, error, refetch } = usePullRequests();
   const { repo } = useRepoInfo();
+
+  useInput((input) => {
+    if (input === "q") exit();
+    if (input === "r") refetch();
+  });
 
   return (
     <Box flexDirection="column" paddingX={1}>
@@ -26,7 +32,7 @@ export function App() {
         ) : prs.length === 0 ? (
           <EmptyState />
         ) : (
-          <PrList prs={prs} refetch={refetch} />
+          <PrList prs={prs} />
         )}
       </Box>
     </Box>
