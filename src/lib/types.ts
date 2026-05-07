@@ -47,6 +47,16 @@ export interface Issue {
   url: string;
 }
 
+export interface Milestone {
+  number: number;
+  title: string;
+  description: string;
+  due_on: string | null;
+  open_issues: number;
+  closed_issues: number;
+  html_url: string;
+}
+
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";
 
 export const VIEWS = ["prs", "issues", "actions", "milestones", "releases"] as const;

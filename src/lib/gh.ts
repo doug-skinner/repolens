@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import type { Issue, PullRequest, RepoInfo } from "./types.js";
+import type { Issue, Milestone, PullRequest, RepoInfo } from "./types.js";
 
 const PR_FIELDS = [
   "number",
@@ -58,4 +58,14 @@ export async function fetchIssues(): Promise<Issue[]> {
 
 export async function openIssueInBrowser(number: number): Promise<void> {
   await $`gh issue view ${number} --web`.quiet();
+}
+
+export async function fetchMilestones(): Promise<Milestone[]> {
+  const result =
+    await $`gh api repos/{owner}/{repo}/milestones --jq 'sort_by(.due_on // "9999") | reverse'`.quiet();
+  return JSON.parse(result.text());
+}
+
+export async function openMilestoneInBrowser(url: string): Promise<void> {
+  await $`open ${url}`.quiet();
 }
