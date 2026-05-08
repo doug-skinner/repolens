@@ -174,7 +174,7 @@ export function App() {
       if (runs.length === 0) {
         return <EmptyState message="No workflow runs" />;
       }
-      return <RunList runs={runs} username={username} onFilteringChange={setIsFiltering} />;
+      return <RunList runs={runs} onFilteringChange={setIsFiltering} />;
     }
 
     if (activeView === "releases") {

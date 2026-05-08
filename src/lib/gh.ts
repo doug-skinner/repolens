@@ -113,7 +113,6 @@ const RUN_FIELDS = [
   "headBranch",
   "createdAt",
   "url",
-  "actor",
 ].join(",");
 
 export async function fetchWorkflowRuns(): Promise<WorkflowRun[]> {

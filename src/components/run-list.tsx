@@ -24,7 +24,6 @@ const SORT_OPTIONS = [
 
 interface RunListProps {
   runs: WorkflowRun[];
-  username: string | null;
   onFilteringChange?: (editing: boolean) => void;
 }
 
@@ -98,41 +97,32 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
   );
 }
 
-export function RunList({ runs, username, onFilteringChange }: RunListProps) {
+export function RunList({ runs, onFilteringChange }: RunListProps) {
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
-  const [mine, setMine] = useState(false);
-
-  const toggleMine = useCallback(() => setMine((v) => !v), []);
 
   const sorted = useMemo(() => {
     let items = runs.filter((run) =>
       matchesFilter(run.displayTitle, filter.filterQuery) ||
       matchesFilter(run.workflowName, filter.filterQuery),
     );
-    if (mine && username) {
-      items = items.filter((run) => run.actor.login === username);
-    }
     if (sort.current === "oldest") items.sort((a, b) => byDateAsc(a.createdAt, b.createdAt));
     else if (sort.current === "name") items.sort((a, b) => byStringAsc(a.workflowName, b.workflowName));
     else if (sort.current === "newest") items.sort((a, b) => byDateDesc(a.createdAt, b.createdAt));
     return items;
-  }, [runs, filter.filterQuery, mine, username, sort.current]);
+  }, [runs, filter.filterQuery, sort.current]);
 
-  const extraKeys = useMemo(() => ({ s: sort.cycleSort, m: toggleMine }), [sort.cycleSort, toggleMine]);
+  const extraKeys = useMemo(() => ({ s: sort.cycleSort }), [sort.cycleSort]);
 
   const onOpen = useCallback((i: number) => openRunInBrowser(sorted[i].url), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
   const onYankRef = useCallback((i: number) => copyToClipboard(String(sorted[i].databaseId)), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: `${mine}:${sort.current}` });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current });
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
-  const tags: string[] = [];
-  if (mine) tags.push("Mine");
-  if (sort.current !== "newest") tags.push(sort.label);
-  const viewLabel = tags.length > 0 ? `Actions [${tags.join(", ")}]` : "Actions";
+  const viewLabel = sort.current !== "newest" ? `Actions [${sort.label}]` : "Actions";
 
   return (
     <Box flexDirection="column">
