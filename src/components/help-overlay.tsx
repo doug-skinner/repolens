@@ -22,6 +22,7 @@ const SECTIONS = [
       ["↑/↓ or j/k", "Navigate items"],
       ["gg / G", "Jump to top / bottom"],
       ["/", "Filter by title"],
+      ["s", "Cycle sort order"],
       ["Enter", "Confirm filter / toggle detail"],
       ["Esc", "Clear filter"],
       ["d", "Toggle detail pane"],

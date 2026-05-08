@@ -9,8 +9,16 @@ import { openRunInBrowser, fetchRunJobs } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
+import { useListSort } from "../hooks/use-list-sort.js";
 import { matchesFilter } from "../lib/filter.js";
+import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
 import type { WorkflowRun, WorkflowJob } from "../lib/types.js";
+
+const SORT_OPTIONS = [
+  { key: "newest", label: "Newest" },
+  { key: "oldest", label: "Oldest" },
+  { key: "name", label: "Name" },
+] as const;
 
 interface RunListProps {
   runs: WorkflowRun[];
@@ -89,27 +97,35 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
 
 export function RunList({ runs, onFilteringChange }: RunListProps) {
   const filter = useListFilter(onFilteringChange);
-  const filtered = useMemo(
-    () => runs.filter((run) =>
+  const sort = useListSort(SORT_OPTIONS);
+
+  const sorted = useMemo(() => {
+    const items = runs.filter((run) =>
       matchesFilter(run.displayTitle, filter.filterQuery) ||
       matchesFilter(run.workflowName, filter.filterQuery),
-    ),
-    [runs, filter.filterQuery],
-  );
+    );
+    if (sort.current === "oldest") items.sort((a, b) => byDateAsc(a.createdAt, b.createdAt));
+    else if (sort.current === "name") items.sort((a, b) => byStringAsc(a.workflowName, b.workflowName));
+    else if (sort.current === "newest") items.sort((a, b) => byDateDesc(a.createdAt, b.createdAt));
+    return items;
+  }, [runs, filter.filterQuery, sort.current]);
 
-  const onOpen = useCallback((i: number) => openRunInBrowser(filtered[i].url), [filtered]);
-  const onYank = useCallback((i: number) => copyToClipboard(filtered[i].url), [filtered]);
-  const onYankRef = useCallback((i: number) => copyToClipboard(String(filtered[i].databaseId)), [filtered]);
+  const extraKeys = useMemo(() => ({ s: sort.cycleSort }), [sort.cycleSort]);
+
+  const onOpen = useCallback((i: number) => openRunInBrowser(sorted[i].url), [sorted]);
+  const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
+  const onYankRef = useCallback((i: number) => copyToClipboard(String(sorted[i].databaseId)), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(filtered.length, { onOpen, onYank, onYankRef, filter });
-  const visible = filtered.slice(scrollOffset, scrollOffset + viewportHeight);
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current });
+  const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
-  const selected = filtered[selectedIndex];
+  const selected = sorted[selectedIndex];
+  const viewLabel = sort.current === "newest" ? "Actions" : `Actions [${sort.label}]`;
 
   return (
     <Box flexDirection="column">
-      <Breadcrumb view="Actions" detail={showDetail && selected ? `${selected.workflowName}: ${selected.displayTitle}` : undefined} />
-      <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={filtered.length} totalCount={runs.length} />
+      <Breadcrumb view={viewLabel} detail={showDetail && selected ? `${selected.workflowName}: ${selected.displayTitle}` : undefined} />
+      <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={runs.length} />
       <Box flexDirection="column">
         {visible.map((run, i) => (
           <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} />

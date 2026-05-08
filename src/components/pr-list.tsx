@@ -8,9 +8,17 @@ import { openPrInBrowser } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
+import { useListSort } from "../hooks/use-list-sort.js";
 import { truncate } from "../lib/format.js";
 import { matchesFilter } from "../lib/filter.js";
+import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
 import type { PullRequest } from "../lib/types.js";
+
+const SORT_OPTIONS = [
+  { key: "newest", label: "Newest" },
+  { key: "oldest", label: "Oldest" },
+  { key: "title", label: "Title" },
+] as const;
 
 interface PrListProps {
   prs: PullRequest[];
@@ -65,24 +73,32 @@ function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
 
 export function PrList({ prs, onFilteringChange }: PrListProps) {
   const filter = useListFilter(onFilteringChange);
-  const filtered = useMemo(
-    () => prs.filter((pr) => matchesFilter(pr.title, filter.filterQuery, pr.labels)),
-    [prs, filter.filterQuery],
-  );
+  const sort = useListSort(SORT_OPTIONS);
 
-  const onOpen = useCallback((i: number) => openPrInBrowser(filtered[i].number), [filtered]);
-  const onYank = useCallback((i: number) => copyToClipboard(filtered[i].url), [filtered]);
-  const onYankRef = useCallback((i: number) => copyToClipboard(`#${filtered[i].number}`), [filtered]);
+  const sorted = useMemo(() => {
+    const items = prs.filter((pr) => matchesFilter(pr.title, filter.filterQuery, pr.labels));
+    if (sort.current === "oldest") items.sort((a, b) => byDateAsc(a.createdAt, b.createdAt));
+    else if (sort.current === "title") items.sort((a, b) => byStringAsc(a.title, b.title));
+    else if (sort.current === "newest") items.sort((a, b) => byDateDesc(a.createdAt, b.createdAt));
+    return items;
+  }, [prs, filter.filterQuery, sort.current]);
+
+  const extraKeys = useMemo(() => ({ s: sort.cycleSort }), [sort.cycleSort]);
+
+  const onOpen = useCallback((i: number) => openPrInBrowser(sorted[i].number), [sorted]);
+  const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
+  const onYankRef = useCallback((i: number) => copyToClipboard(`#${sorted[i].number}`), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(filtered.length, { onOpen, onYank, onYankRef, filter });
-  const visible = filtered.slice(scrollOffset, scrollOffset + viewportHeight);
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current });
+  const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
-  const selected = filtered[selectedIndex];
+  const selected = sorted[selectedIndex];
+  const viewLabel = sort.current === "newest" ? "PRs" : `PRs [${sort.label}]`;
 
   return (
     <Box flexDirection="column">
-      <Breadcrumb view="PRs" detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
-      <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={filtered.length} totalCount={prs.length} />
+      <Breadcrumb view={viewLabel} detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
+      <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={prs.length} />
       <Box flexDirection="column">
         {visible.map((pr, i) => (
           <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} />

@@ -8,8 +8,16 @@ import { openIssueInBrowser } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
+import { useListSort } from "../hooks/use-list-sort.js";
 import { matchesFilter } from "../lib/filter.js";
+import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
 import type { Issue } from "../lib/types.js";
+
+const SORT_OPTIONS = [
+  { key: "newest", label: "Newest" },
+  { key: "oldest", label: "Oldest" },
+  { key: "title", label: "Title" },
+] as const;
 
 interface IssueListProps {
   issues: Issue[];
@@ -50,24 +58,32 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
 
 export function IssueList({ issues, onFilteringChange }: IssueListProps) {
   const filter = useListFilter(onFilteringChange);
-  const filtered = useMemo(
-    () => issues.filter((issue) => matchesFilter(issue.title, filter.filterQuery, issue.labels)),
-    [issues, filter.filterQuery],
-  );
+  const sort = useListSort(SORT_OPTIONS);
 
-  const onOpen = useCallback((i: number) => openIssueInBrowser(filtered[i].number), [filtered]);
-  const onYank = useCallback((i: number) => copyToClipboard(filtered[i].url), [filtered]);
-  const onYankRef = useCallback((i: number) => copyToClipboard(`#${filtered[i].number}`), [filtered]);
+  const sorted = useMemo(() => {
+    const items = issues.filter((issue) => matchesFilter(issue.title, filter.filterQuery, issue.labels));
+    if (sort.current === "oldest") items.sort((a, b) => byDateAsc(a.createdAt, b.createdAt));
+    else if (sort.current === "title") items.sort((a, b) => byStringAsc(a.title, b.title));
+    else if (sort.current === "newest") items.sort((a, b) => byDateDesc(a.createdAt, b.createdAt));
+    return items;
+  }, [issues, filter.filterQuery, sort.current]);
+
+  const extraKeys = useMemo(() => ({ s: sort.cycleSort }), [sort.cycleSort]);
+
+  const onOpen = useCallback((i: number) => openIssueInBrowser(sorted[i].number), [sorted]);
+  const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
+  const onYankRef = useCallback((i: number) => copyToClipboard(`#${sorted[i].number}`), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(filtered.length, { onOpen, onYank, onYankRef, filter });
-  const visible = filtered.slice(scrollOffset, scrollOffset + viewportHeight);
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current });
+  const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
-  const selected = filtered[selectedIndex];
+  const selected = sorted[selectedIndex];
+  const viewLabel = sort.current === "newest" ? "Issues" : `Issues [${sort.label}]`;
 
   return (
     <Box flexDirection="column">
-      <Breadcrumb view="Issues" detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
-      <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={filtered.length} totalCount={issues.length} />
+      <Breadcrumb view={viewLabel} detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
+      <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={issues.length} />
       <Box flexDirection="column">
         {visible.map((issue, i) => (
           <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} />
