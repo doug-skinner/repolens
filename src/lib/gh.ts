@@ -122,3 +122,9 @@ export async function fetchReleases(): Promise<Release[]> {
 export async function openReleaseInBrowser(tagName: string): Promise<void> {
   await $`gh release view ${tagName} --web`.quiet();
 }
+
+export async function fetchReviewRequestCount(): Promise<number> {
+  const result =
+    await $`gh pr list --search "review-requested:@me" --json number --limit 100`.quiet();
+  return (result.json() as unknown[]).length;
+}

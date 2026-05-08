@@ -5,10 +5,11 @@ interface HeaderProps {
   repo: RepoInfo | null;
   prCount: number;
   issueCount: number;
+  reviewRequestCount: number;
   activeView: View;
 }
 
-export function Header({ repo, prCount, issueCount, activeView }: HeaderProps) {
+export function Header({ repo, prCount, issueCount, reviewRequestCount, activeView }: HeaderProps) {
   return (
     <Box
       flexDirection="column"
@@ -27,6 +28,9 @@ export function Header({ repo, prCount, issueCount, activeView }: HeaderProps) {
         )}
         <Text dimColor>
           {prCount} PR{prCount !== 1 ? "s" : ""} · {issueCount} issue{issueCount !== 1 ? "s" : ""}
+          {reviewRequestCount > 0 && (
+            <Text color="magenta"> · {reviewRequestCount} review{reviewRequestCount !== 1 ? "s" : ""}</Text>
+          )}
         </Text>
       </Box>
       <Box gap={1}>
