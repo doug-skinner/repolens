@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Box, useInput } from "ink";
+import { useCallback } from "react";
+import { Box } from "ink";
 import { MilestoneRow } from "./milestone-row.js";
 import { openMilestoneInBrowser } from "../lib/gh.js";
+import { useListNavigation } from "../hooks/use-list-navigation.js";
 import type { Milestone } from "../lib/types.js";
 
 interface MilestoneListProps {
@@ -9,17 +10,8 @@ interface MilestoneListProps {
 }
 
 export function MilestoneList({ milestones }: MilestoneListProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  useInput((_input, key) => {
-    if (key.upArrow) {
-      setSelectedIndex((i) => Math.max(0, i - 1));
-    } else if (key.downArrow) {
-      setSelectedIndex((i) => Math.min(milestones.length - 1, i + 1));
-    } else if (key.return) {
-      openMilestoneInBrowser(milestones[selectedIndex].html_url);
-    }
-  });
+  const onSelect = useCallback((i: number) => openMilestoneInBrowser(milestones[i].html_url), [milestones]);
+  const selectedIndex = useListNavigation(milestones.length, onSelect);
 
   return (
     <Box flexDirection="column">

@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Box, useInput } from "ink";
+import { useCallback } from "react";
+import { Box } from "ink";
 import { RunRow } from "./run-row.js";
 import { openRunInBrowser } from "../lib/gh.js";
+import { useListNavigation } from "../hooks/use-list-navigation.js";
 import type { WorkflowRun } from "../lib/types.js";
 
 interface RunListProps {
@@ -9,17 +10,8 @@ interface RunListProps {
 }
 
 export function RunList({ runs }: RunListProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  useInput((_input, key) => {
-    if (key.upArrow) {
-      setSelectedIndex((i) => Math.max(0, i - 1));
-    } else if (key.downArrow) {
-      setSelectedIndex((i) => Math.min(runs.length - 1, i + 1));
-    } else if (key.return) {
-      openRunInBrowser(runs[selectedIndex].url);
-    }
-  });
+  const onSelect = useCallback((i: number) => openRunInBrowser(runs[i].url), [runs]);
+  const selectedIndex = useListNavigation(runs.length, onSelect);
 
   return (
     <Box flexDirection="column">

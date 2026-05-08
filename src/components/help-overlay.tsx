@@ -19,7 +19,8 @@ const SECTIONS = [
   {
     title: "List views",
     bindings: [
-      ["↑ / ↓", "Navigate items"],
+      ["↑/↓ or j/k", "Navigate items"],
+      ["gg / G", "Jump to top / bottom"],
       ["Enter", "Open in browser"],
     ],
   },

@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Box, useInput } from "ink";
+import { useCallback } from "react";
+import { Box } from "ink";
 import { PrRow } from "./pr-row.js";
 import { openPrInBrowser } from "../lib/gh.js";
+import { useListNavigation } from "../hooks/use-list-navigation.js";
 import type { PullRequest } from "../lib/types.js";
 
 interface PrListProps {
@@ -9,17 +10,8 @@ interface PrListProps {
 }
 
 export function PrList({ prs }: PrListProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  useInput((_input, key) => {
-    if (key.upArrow) {
-      setSelectedIndex((i) => Math.max(0, i - 1));
-    } else if (key.downArrow) {
-      setSelectedIndex((i) => Math.min(prs.length - 1, i + 1));
-    } else if (key.return) {
-      openPrInBrowser(prs[selectedIndex].number);
-    }
-  });
+  const onSelect = useCallback((i: number) => openPrInBrowser(prs[i].number), [prs]);
+  const selectedIndex = useListNavigation(prs.length, onSelect);
 
   return (
     <Box flexDirection="column">
