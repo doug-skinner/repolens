@@ -11,7 +11,8 @@
       "Bash(gh run *)",
       "Bash(gh release *)",
       "Bash(git fetch *)",
-      "Bash(gh api *)"
+      "Bash(gh api *)",
+      "Bash(gh milestone *)"
     ]
   }
 }
