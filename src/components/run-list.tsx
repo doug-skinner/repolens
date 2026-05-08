@@ -58,10 +58,21 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
       ) : jobs && jobs.length > 0 ? (
         jobs.map((job) => {
           const { symbol, color } = jobSymbol(job);
+          const failedStep = job.conclusion === "failure"
+            ? job.steps?.find((s) => s.conclusion === "failure")
+            : null;
           return (
-            <Box key={job.name} gap={1}>
-              <Text color={color}>{symbol}</Text>
-              <Text>{job.name}</Text>
+            <Box key={job.name} flexDirection="column">
+              <Box gap={1}>
+                <Text color={color}>{symbol}</Text>
+                <Text>{job.name}</Text>
+              </Box>
+              {failedStep && (
+                <Box paddingLeft={2} gap={1}>
+                  <Text dimColor>└</Text>
+                  <Text color="red">{failedStep.name}</Text>
+                </Box>
+              )}
             </Box>
           );
         })

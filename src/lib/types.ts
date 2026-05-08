@@ -85,10 +85,16 @@ export interface Release {
   downloadCount: number;
 }
 
+export interface WorkflowStep {
+  name: string;
+  conclusion: string;
+}
+
 export interface WorkflowJob {
   name: string;
   status: string;
   conclusion: string;
+  steps: WorkflowStep[];
 }
 
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";
