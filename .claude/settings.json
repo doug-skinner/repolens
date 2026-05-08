@@ -13,7 +13,9 @@
       "Bash(git fetch *)",
       "Bash(gh api *)",
       "Bash(gh milestone *)",
-      "Bash(git -C /Users/dougskinner/brand/repolens push origin main)"
+      "Bash(git -C /Users/dougskinner/brand/repolens push origin main)",
+      "Bash(bun add *)",
+      "Bash(bun test *)"
     ]
   }
 }

@@ -9,6 +9,7 @@ import { MilestoneList } from "./components/milestone-list.js";
 import { RunList } from "./components/run-list.js";
 import { ReleaseList } from "./components/release-list.js";
 import { EmptyState } from "./components/empty-state.js";
+import { HelpOverlay } from "./components/help-overlay.js";
 import { usePullRequests } from "./hooks/use-pull-requests.js";
 import { useIssues } from "./hooks/use-issues.js";
 import { useMilestones } from "./hooks/use-milestones.js";
@@ -26,8 +27,16 @@ export function App() {
   const { releases, loading: relLoading, error: relError, refetch: refetchRel } = useReleases();
   const { repo } = useRepoInfo();
   const [activeView, setActiveView] = useState<View>("dashboard");
+  const [showHelp, setShowHelp] = useState(false);
 
   useInput((input, key) => {
+    if (showHelp) return;
+
+    if (input === "?") {
+      setShowHelp(true);
+      return;
+    }
+
     if (input === "q") exit();
     if (input === "r") {
       refetchPrs();
@@ -184,7 +193,7 @@ export function App() {
     <Box flexDirection="column" paddingX={1}>
       <Header repo={repo} prCount={prs.length} issueCount={issues.length} activeView={activeView} />
       <Box marginTop={1} flexDirection="column">
-        {renderView()}
+        {showHelp ? <HelpOverlay onClose={() => setShowHelp(false)} /> : renderView()}
       </Box>
     </Box>
   );
