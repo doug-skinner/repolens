@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Box, Text } from "ink";
 import { ReleaseRow } from "./release-row.js";
 import { DetailPane } from "./detail-pane.js";
+import { Breadcrumb } from "./breadcrumb.js";
 import { openReleaseInBrowser } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
@@ -35,15 +36,21 @@ export function ReleaseList({ releases }: ReleaseListProps) {
     useListNavigation(releases.length, { onOpen, onYank, onYankRef });
   const visible = releases.slice(scrollOffset, scrollOffset + viewportHeight);
 
+  const selected = releases[selectedIndex];
+  const detailLabel = selected
+    ? `${selected.tagName}${selected.name && selected.name !== selected.tagName ? ` — ${selected.name}` : ""}`
+    : undefined;
+
   return (
     <Box flexDirection="column">
+      <Breadcrumb view="Releases" detail={showDetail && selected ? detailLabel : undefined} />
       <Box flexDirection="column">
         {visible.map((release, i) => (
           <ReleaseRow key={release.tagName} release={release} selected={scrollOffset + i === selectedIndex} />
         ))}
       </Box>
-      {showDetail && releases[selectedIndex] && (
-        <ReleaseDetail release={releases[selectedIndex]} height={detailHeight} />
+      {showDetail && selected && (
+        <ReleaseDetail release={selected} height={detailHeight} />
       )}
     </Box>
   );

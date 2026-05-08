@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { useInput, useStdout } from "ink";
 
 const GG_TIMEOUT_MS = 500;
-const LAYOUT_OVERHEAD = 6; // header (4) + margin (1) + footer (1)
+const LAYOUT_OVERHEAD = 7; // header (4) + breadcrumb (1) + margin (1) + footer (1)
 const LIST_HEIGHT_WITH_DETAIL = 5;
 
 interface ListNavigationOptions {

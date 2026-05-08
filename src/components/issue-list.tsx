@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Box, Text } from "ink";
 import { IssueRow } from "./issue-row.js";
 import { DetailPane } from "./detail-pane.js";
+import { Breadcrumb } from "./breadcrumb.js";
 import { openIssueInBrowser } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
@@ -51,15 +52,18 @@ export function IssueList({ issues }: IssueListProps) {
     useListNavigation(issues.length, { onOpen, onYank, onYankRef });
   const visible = issues.slice(scrollOffset, scrollOffset + viewportHeight);
 
+  const selected = issues[selectedIndex];
+
   return (
     <Box flexDirection="column">
+      <Breadcrumb view="Issues" detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
       <Box flexDirection="column">
         {visible.map((issue, i) => (
           <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} />
         ))}
       </Box>
-      {showDetail && issues[selectedIndex] && (
-        <IssueDetail issue={issues[selectedIndex]} height={detailHeight} />
+      {showDetail && selected && (
+        <IssueDetail issue={selected} height={detailHeight} />
       )}
     </Box>
   );

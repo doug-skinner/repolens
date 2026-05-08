@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Box, Text } from "ink";
 import { PrRow } from "./pr-row.js";
 import { DetailPane } from "./detail-pane.js";
+import { Breadcrumb } from "./breadcrumb.js";
 import { openPrInBrowser } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
@@ -66,15 +67,18 @@ export function PrList({ prs }: PrListProps) {
     useListNavigation(prs.length, { onOpen, onYank, onYankRef });
   const visible = prs.slice(scrollOffset, scrollOffset + viewportHeight);
 
+  const selected = prs[selectedIndex];
+
   return (
     <Box flexDirection="column">
+      <Breadcrumb view="PRs" detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
       <Box flexDirection="column">
         {visible.map((pr, i) => (
           <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} />
         ))}
       </Box>
-      {showDetail && prs[selectedIndex] && (
-        <PrDetail pr={prs[selectedIndex]} height={detailHeight} />
+      {showDetail && selected && (
+        <PrDetail pr={selected} height={detailHeight} />
       )}
     </Box>
   );

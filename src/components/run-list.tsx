@@ -3,6 +3,7 @@ import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
 import { RunRow } from "./run-row.js";
 import { DetailPane } from "./detail-pane.js";
+import { Breadcrumb } from "./breadcrumb.js";
 import { openRunInBrowser, fetchRunJobs } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
@@ -79,15 +80,18 @@ export function RunList({ runs }: RunListProps) {
     useListNavigation(runs.length, { onOpen, onYank, onYankRef });
   const visible = runs.slice(scrollOffset, scrollOffset + viewportHeight);
 
+  const selected = runs[selectedIndex];
+
   return (
     <Box flexDirection="column">
+      <Breadcrumb view="Actions" detail={showDetail && selected ? `${selected.workflowName}: ${selected.displayTitle}` : undefined} />
       <Box flexDirection="column">
         {visible.map((run, i) => (
           <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} />
         ))}
       </Box>
-      {showDetail && runs[selectedIndex] && (
-        <RunDetail run={runs[selectedIndex]} height={detailHeight} />
+      {showDetail && selected && (
+        <RunDetail run={selected} height={detailHeight} />
       )}
     </Box>
   );

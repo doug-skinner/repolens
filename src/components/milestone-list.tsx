@@ -3,6 +3,7 @@ import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
 import { MilestoneRow } from "./milestone-row.js";
 import { DetailPane } from "./detail-pane.js";
+import { Breadcrumb } from "./breadcrumb.js";
 import { openMilestoneInBrowser, fetchMilestoneIssues } from "../lib/gh.js";
 import type { MilestoneIssue } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
@@ -67,15 +68,18 @@ export function MilestoneList({ milestones }: MilestoneListProps) {
     useListNavigation(milestones.length, { onOpen, onYank, onYankRef });
   const visible = milestones.slice(scrollOffset, scrollOffset + viewportHeight);
 
+  const selected = milestones[selectedIndex];
+
   return (
     <Box flexDirection="column">
+      <Breadcrumb view="Milestones" detail={showDetail && selected ? selected.title : undefined} />
       <Box flexDirection="column">
         {visible.map((ms, i) => (
           <MilestoneRow key={ms.number} milestone={ms} selected={scrollOffset + i === selectedIndex} />
         ))}
       </Box>
-      {showDetail && milestones[selectedIndex] && (
-        <MilestoneDetail milestone={milestones[selectedIndex]} height={detailHeight} />
+      {showDetail && selected && (
+        <MilestoneDetail milestone={selected} height={detailHeight} />
       )}
     </Box>
   );
