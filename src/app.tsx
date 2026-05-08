@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Text, useInput, useApp } from "ink";
+import { Box, Text, useInput, useApp, useStdout } from "ink";
 import Spinner from "ink-spinner";
 import { Header } from "./components/header.js";
 import { Dashboard } from "./components/dashboard.js";
@@ -10,6 +10,7 @@ import { RunList } from "./components/run-list.js";
 import { ReleaseList } from "./components/release-list.js";
 import { EmptyState } from "./components/empty-state.js";
 import { HelpOverlay } from "./components/help-overlay.js";
+import { Footer } from "./components/footer.js";
 import { usePullRequests } from "./hooks/use-pull-requests.js";
 import { useIssues } from "./hooks/use-issues.js";
 import { useMilestones } from "./hooks/use-milestones.js";
@@ -20,6 +21,7 @@ import { VIEWS, type View } from "./lib/types.js";
 
 export function App() {
   const { exit } = useApp();
+  const { stdout } = useStdout();
   const { prs, loading: prsLoading, error: prsError, refetch: refetchPrs } = usePullRequests();
   const { issues, loading: issuesLoading, error: issuesError, refetch: refetchIssues } = useIssues();
   const { milestones, loading: msLoading, error: msError, refetch: refetchMs } = useMilestones();
@@ -190,11 +192,12 @@ export function App() {
   };
 
   return (
-    <Box flexDirection="column" paddingX={1}>
+    <Box flexDirection="column" paddingX={1} minHeight={stdout?.rows}>
       <Header repo={repo} prCount={prs.length} issueCount={issues.length} activeView={activeView} />
-      <Box marginTop={1} flexDirection="column">
+      <Box marginTop={1} flexDirection="column" flexGrow={1}>
         {showHelp ? <HelpOverlay onClose={() => setShowHelp(false)} /> : renderView()}
       </Box>
+      {!showHelp && <Footer activeView={activeView} />}
     </Box>
   );
 }
