@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import type { Issue, Milestone, PullRequest, RepoInfo, WorkflowRun } from "./types.js";
+import type { Issue, Milestone, PullRequest, Release, RepoInfo, WorkflowRun } from "./types.js";
 
 const PR_FIELDS = [
   "number",
@@ -89,4 +89,23 @@ export async function fetchWorkflowRuns(): Promise<WorkflowRun[]> {
 
 export async function openRunInBrowser(url: string): Promise<void> {
   await $`open ${url}`.quiet();
+}
+
+const RELEASE_FIELDS = [
+  "tagName",
+  "name",
+  "publishedAt",
+  "isDraft",
+  "isPrerelease",
+  "isLatest",
+].join(",");
+
+export async function fetchReleases(): Promise<Release[]> {
+  const result =
+    await $`gh release list --json ${RELEASE_FIELDS} --limit 30`.quiet();
+  return result.json();
+}
+
+export async function openReleaseInBrowser(tagName: string): Promise<void> {
+  await $`gh release view ${tagName} --web`.quiet();
 }

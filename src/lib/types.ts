@@ -68,6 +68,15 @@ export interface WorkflowRun {
   url: string;
 }
 
+export interface Release {
+  tagName: string;
+  name: string;
+  publishedAt: string;
+  isDraft: boolean;
+  isPrerelease: boolean;
+  isLatest: boolean;
+}
+
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";
 
 export const VIEWS = ["prs", "issues", "actions", "milestones", "releases"] as const;
