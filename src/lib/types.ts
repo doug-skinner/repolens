@@ -79,10 +79,11 @@ export interface Release {
 
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";
 
-export const VIEWS = ["prs", "issues", "actions", "milestones", "releases"] as const;
+export const VIEWS = ["dashboard", "prs", "issues", "actions", "milestones", "releases"] as const;
 export type View = (typeof VIEWS)[number];
 
 export const VIEW_LABELS: Record<View, string> = {
+  dashboard: "Dashboard",
   prs: "PRs",
   issues: "Issues",
   actions: "Actions",

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Box, Text, useInput, useApp } from "ink";
 import Spinner from "ink-spinner";
 import { Header } from "./components/header.js";
+import { Dashboard } from "./components/dashboard.js";
 import { PrList } from "./components/pr-list.js";
 import { IssueList } from "./components/issue-list.js";
 import { MilestoneList } from "./components/milestone-list.js";
@@ -24,7 +25,7 @@ export function App() {
   const { runs, loading: runsLoading, error: runsError, refetch: refetchRuns } = useWorkflowRuns();
   const { releases, loading: relLoading, error: relError, refetch: refetchRel } = useReleases();
   const { repo } = useRepoInfo();
-  const [activeView, setActiveView] = useState<View>("prs");
+  const [activeView, setActiveView] = useState<View>("dashboard");
 
   useInput((input, key) => {
     if (input === "q") exit();
@@ -52,6 +53,20 @@ export function App() {
   });
 
   const renderView = () => {
+    if (activeView === "dashboard") {
+      const anyLoading = prsLoading || issuesLoading || runsLoading || msLoading || relLoading;
+      return (
+        <Dashboard
+          prs={prs}
+          issues={issues}
+          runs={runs}
+          milestones={milestones}
+          releases={releases}
+          loading={anyLoading}
+        />
+      );
+    }
+
     if (activeView === "prs") {
       if (prsLoading) {
         return (

@@ -37,7 +37,7 @@ export function Header({ repo, prCount, issueCount, activeView }: HeaderProps) {
         ))}
       </Box>
       <Text dimColor>
-        tab/shift+tab switch view · 1-5 jump to view · ↑↓ navigate · enter open · r refresh · q quit
+        tab/shift+tab switch view · 1-6 jump to view · ↑↓ navigate · enter open · r refresh · q quit
       </Text>
     </Box>
   );
