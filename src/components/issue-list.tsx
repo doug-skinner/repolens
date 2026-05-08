@@ -9,6 +9,8 @@ import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
+import { isStale } from "../lib/format.js";
+import { STALE_DAYS } from "../lib/config.js";
 import { matchesFilter } from "../lib/filter.js";
 import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
 import type { Issue } from "../lib/types.js";
@@ -98,7 +100,7 @@ export function IssueList({ issues, username, onFilteringChange }: IssueListProp
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={issues.length} />
       <Box flexDirection="column">
         {visible.map((issue, i) => (
-          <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} />
+          <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} stale={isStale(issue.createdAt, STALE_DAYS)} />
         ))}
       </Box>
       {showDetail && selected && (

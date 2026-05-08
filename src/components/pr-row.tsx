@@ -7,9 +7,12 @@ import type { PullRequest } from "../lib/types.js";
 interface PrRowProps {
   pr: PullRequest;
   selected: boolean;
+  stale?: boolean;
 }
 
-export function PrRow({ pr, selected }: PrRowProps) {
+export function PrRow({ pr, selected, stale }: PrRowProps) {
+  const dim = stale && !selected;
+
   return (
     <Box gap={1}>
       <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
@@ -19,7 +22,7 @@ export function PrRow({ pr, selected }: PrRowProps) {
         </Text>
       </Box>
       <Box flexGrow={1}>
-        <Text bold={selected} wrap="truncate">
+        <Text bold={selected} dimColor={dim} wrap="truncate">
           {pr.isDraft ? <Text dimColor>[draft] </Text> : null}
           {pr.title}
         </Text>
@@ -30,18 +33,18 @@ export function PrRow({ pr, selected }: PrRowProps) {
         </Text>
       </Box>
       <Box width={20}>
-        <Text color="cyan" wrap="truncate">
+        <Text color={dim ? undefined : "cyan"} dimColor={dim} wrap="truncate">
           {truncate(pr.headRefName, 18)}
         </Text>
       </Box>
       <Box width={9}>
-        <CheckBadge summary={summarizeChecks(pr.statusCheckRollup)} />
+        {dim ? <Text dimColor>—</Text> : <CheckBadge summary={summarizeChecks(pr.statusCheckRollup)} />}
       </Box>
       <Box width={11}>
-        <ReviewBadge decision={pr.reviewDecision} />
+        {dim ? <Text dimColor>—</Text> : <ReviewBadge decision={pr.reviewDecision} />}
       </Box>
       <Box width={4}>
-        <SizeBadge linesChanged={pr.additions + pr.deletions} />
+        {dim ? <Text dimColor>—</Text> : <SizeBadge linesChanged={pr.additions + pr.deletions} />}
       </Box>
       <Box width={9}>
         <Text dimColor>{timeAgo(pr.createdAt)}</Text>

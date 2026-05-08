@@ -10,6 +10,8 @@ import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
+import { isStale } from "../lib/format.js";
+import { STALE_DAYS } from "../lib/config.js";
 import { matchesFilter } from "../lib/filter.js";
 import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
 import type { WorkflowRun, WorkflowJob } from "../lib/types.js";
@@ -138,7 +140,7 @@ export function RunList({ runs, username, onFilteringChange }: RunListProps) {
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={runs.length} />
       <Box flexDirection="column">
         {visible.map((run, i) => (
-          <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} />
+          <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} stale={isStale(run.createdAt, STALE_DAYS)} />
         ))}
       </Box>
       {showDetail && selected && (

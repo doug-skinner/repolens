@@ -6,9 +6,11 @@ import type { Issue } from "../lib/types.js";
 interface IssueRowProps {
   issue: Issue;
   selected: boolean;
+  stale?: boolean;
 }
 
-export function IssueRow({ issue, selected }: IssueRowProps) {
+export function IssueRow({ issue, selected, stale }: IssueRowProps) {
+  const dim = stale && !selected;
   const labelText = issue.labels
     .map((l) => l.name)
     .join(", ");
@@ -22,7 +24,7 @@ export function IssueRow({ issue, selected }: IssueRowProps) {
         </Text>
       </Box>
       <Box flexGrow={1}>
-        <Text bold={selected} wrap="truncate">
+        <Text bold={selected} dimColor={dim} wrap="truncate">
           {issue.title}
         </Text>
       </Box>
@@ -32,7 +34,7 @@ export function IssueRow({ issue, selected }: IssueRowProps) {
         </Text>
       </Box>
       <Box width={26}>
-        <Text color="yellow" wrap="truncate">
+        <Text color={dim ? undefined : "yellow"} dimColor={dim} wrap="truncate">
           {truncate(labelText, 24)}
         </Text>
       </Box>

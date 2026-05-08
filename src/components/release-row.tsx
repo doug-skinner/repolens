@@ -6,6 +6,7 @@ import type { Release } from "../lib/types.js";
 interface ReleaseRowProps {
   release: Release;
   selected: boolean;
+  stale?: boolean;
 }
 
 function statusSymbol(release: Release): { symbol: string; color: string } | null {
@@ -15,7 +16,8 @@ function statusSymbol(release: Release): { symbol: string; color: string } | nul
   return null;
 }
 
-export function ReleaseRow({ release, selected }: ReleaseRowProps) {
+export function ReleaseRow({ release, selected, stale }: ReleaseRowProps) {
+  const dim = stale && !selected;
   const showName = release.name && release.name !== release.tagName;
   const status = statusSymbol(release);
   const firstLine = release.body.split("\n").find((l) => l.trim()) ?? "";
@@ -25,11 +27,11 @@ export function ReleaseRow({ release, selected }: ReleaseRowProps) {
     <Box gap={1}>
       <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
       <Box width={2}>
-        {status ? <Text color={status.color}>{status.symbol}</Text> : <Text> </Text>}
+        {status ? <Text color={dim ? undefined : status.color} dimColor={dim}>{status.symbol}</Text> : <Text> </Text>}
       </Box>
       <Box width={20}>
         <Link url={release.url}>
-          <Text bold={selected}>{truncate(release.tagName, 18)}</Text>
+          <Text bold={selected} dimColor={dim}>{truncate(release.tagName, 18)}</Text>
         </Link>
       </Box>
       <Box flexGrow={1}>

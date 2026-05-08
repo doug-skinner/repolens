@@ -9,7 +9,8 @@ import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
-import { truncate } from "../lib/format.js";
+import { truncate, isStale } from "../lib/format.js";
+import { STALE_DAYS } from "../lib/config.js";
 import { matchesFilter } from "../lib/filter.js";
 import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
 import type { PullRequest } from "../lib/types.js";
@@ -113,7 +114,7 @@ export function PrList({ prs, username, onFilteringChange }: PrListProps) {
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={prs.length} />
       <Box flexDirection="column">
         {visible.map((pr, i) => (
-          <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} />
+          <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} stale={isStale(pr.createdAt, STALE_DAYS)} />
         ))}
       </Box>
       {showDetail && selected && (

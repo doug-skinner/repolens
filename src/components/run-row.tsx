@@ -5,6 +5,7 @@ import type { WorkflowRun } from "../lib/types.js";
 interface RunRowProps {
   run: WorkflowRun;
   selected: boolean;
+  stale?: boolean;
 }
 
 function statusSymbol(run: WorkflowRun): { symbol: string; color: string } {
@@ -17,14 +18,15 @@ function statusSymbol(run: WorkflowRun): { symbol: string; color: string } {
   return { symbol: "·", color: "gray" };
 }
 
-export function RunRow({ run, selected }: RunRowProps) {
+export function RunRow({ run, selected, stale }: RunRowProps) {
   const { symbol, color } = statusSymbol(run);
+  const dim = stale && !selected;
 
   return (
     <Box gap={1}>
       <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
       <Box width={2}>
-        <Text color={color}>{symbol}</Text>
+        <Text color={dim ? undefined : color} dimColor={dim}>{symbol}</Text>
       </Box>
       <Box width={20}>
         <Text dimColor wrap="truncate">
@@ -32,12 +34,12 @@ export function RunRow({ run, selected }: RunRowProps) {
         </Text>
       </Box>
       <Box flexGrow={1}>
-        <Text bold={selected} wrap="truncate">
+        <Text bold={selected} dimColor={dim} wrap="truncate">
           {run.displayTitle}
         </Text>
       </Box>
       <Box width={20}>
-        <Text color="cyan" wrap="truncate">
+        <Text color={dim ? undefined : "cyan"} dimColor={dim} wrap="truncate">
           {truncate(run.headBranch, 18)}
         </Text>
       </Box>

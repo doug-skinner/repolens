@@ -16,6 +16,12 @@ export function timeAgo(dateStr: string): string {
   return "just now";
 }
 
+export function isStale(dateStr: string, days: number): boolean {
+  if (days <= 0) return false;
+  const ms = Date.now() - new Date(dateStr).getTime();
+  return ms > days * 86_400_000;
+}
+
 export function summarizeChecks(checks: StatusCheck[]): CheckSummary {
   if (checks.length === 0) return "none";
   if (checks.some((c) => c.conclusion === "FAILURE")) return "fail";
