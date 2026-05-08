@@ -104,7 +104,14 @@ function MilestoneSection({ milestones }: { milestones: Milestone[] }) {
           </Text>
         </>
       ) : milestones.length > 0 ? (
-        <Text dimColor>{milestones.length} milestone{milestones.length !== 1 ? "s" : ""} (none with upcoming due date)</Text>
+        <>
+          <Text>
+            <Text bold>{milestones[0].title}</Text>
+          </Text>
+          <Text dimColor>
+            {milestones[0].closed_issues}/{milestones[0].open_issues + milestones[0].closed_issues} done
+          </Text>
+        </>
       ) : (
         <Text dimColor>No milestones</Text>
       )}
