@@ -31,9 +31,9 @@ export function RunRow({ run, selected }: RunRowProps) {
           {truncate(run.workflowName, 18)}
         </Text>
       </Box>
-      <Box width={40}>
+      <Box flexGrow={1}>
         <Text bold={selected} wrap="truncate">
-          {truncate(run.displayTitle, 38)}
+          {run.displayTitle}
         </Text>
       </Box>
       <Box width={20}>

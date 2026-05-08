@@ -18,10 +18,10 @@ export function PrRow({ pr, selected }: PrRowProps) {
           <Link url={pr.url}>#{pr.number}</Link>
         </Text>
       </Box>
-      <Box width={44}>
+      <Box flexGrow={1}>
         <Text bold={selected} wrap="truncate">
           {pr.isDraft ? <Text dimColor>[draft] </Text> : null}
-          {truncate(pr.title, pr.isDraft ? 34 : 42)}
+          {pr.title}
         </Text>
       </Box>
       <Box width={14}>

@@ -21,9 +21,9 @@ export function IssueRow({ issue, selected }: IssueRowProps) {
           <Link url={issue.url}>#{issue.number}</Link>
         </Text>
       </Box>
-      <Box width={44}>
+      <Box flexGrow={1}>
         <Text bold={selected} wrap="truncate">
-          {truncate(issue.title, 42)}
+          {issue.title}
         </Text>
       </Box>
       <Box width={14}>
