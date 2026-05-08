@@ -1,8 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Box, Text } from "ink";
+import Spinner from "ink-spinner";
 import { MilestoneRow } from "./milestone-row.js";
 import { DetailPane } from "./detail-pane.js";
-import { openMilestoneInBrowser } from "../lib/gh.js";
+import { openMilestoneInBrowser, fetchMilestoneIssues } from "../lib/gh.js";
+import type { MilestoneIssue } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import type { Milestone } from "../lib/types.js";
@@ -12,14 +14,46 @@ interface MilestoneListProps {
 }
 
 function MilestoneDetail({ milestone, height }: { milestone: Milestone; height: number }) {
+  const [issues, setIssues] = useState<MilestoneIssue[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setIssues(null);
+    fetchMilestoneIssues(milestone.title).then((result) => {
+      if (!cancelled) {
+        setIssues(result);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [milestone.number]);
+
   return (
     <DetailPane title={milestone.title} height={height}>
-      {milestone.description ? (
-        <Box flexDirection="column" flexGrow={1} overflow="hidden">
-          <Text>{milestone.description}</Text>
+      {milestone.description && (
+        <Text dimColor>{milestone.description}</Text>
+      )}
+      {loading ? (
+        <Box gap={1}>
+          <Spinner type="dots" />
+          <Text dimColor>Loading issues…</Text>
         </Box>
+      ) : issues && issues.length > 0 ? (
+        issues.map((issue) => (
+          <Box key={issue.number} gap={1}>
+            <Text color={issue.state === "OPEN" ? "green" : "magenta"}>
+              {issue.state === "OPEN" ? "○" : "●"}
+            </Text>
+            <Text dimColor>#{issue.number}</Text>
+            <Text>{issue.title}</Text>
+          </Box>
+        ))
       ) : (
-        <Text dimColor>No description</Text>
+        <Text dimColor>No issues</Text>
       )}
     </DetailPane>
   );

@@ -83,6 +83,18 @@ export async function fetchMilestones(): Promise<Milestone[]> {
   });
 }
 
+export interface MilestoneIssue {
+  number: number;
+  title: string;
+  state: string;
+}
+
+export async function fetchMilestoneIssues(milestoneTitle: string): Promise<MilestoneIssue[]> {
+  const result =
+    await $`gh issue list --milestone ${milestoneTitle} --state all --json number,title,state --limit 100`.quiet();
+  return result.json();
+}
+
 export async function openMilestoneInBrowser(url: string): Promise<void> {
   await $`open ${url}`.quiet();
 }
