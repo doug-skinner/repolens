@@ -8,41 +8,36 @@ interface ReleaseRowProps {
   selected: boolean;
 }
 
+function statusSymbol(release: Release): { symbol: string; color: string } | null {
+  if (release.isLatest) return { symbol: "✓", color: "green" };
+  if (release.isPrerelease) return { symbol: "○", color: "yellow" };
+  if (release.isDraft) return { symbol: "·", color: "gray" };
+  return null;
+}
+
 export function ReleaseRow({ release, selected }: ReleaseRowProps) {
   const showName = release.name && release.name !== release.tagName;
+  const status = statusSymbol(release);
+  const detail = showName ? release.name : release.body;
 
   return (
     <Box gap={1}>
       <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
+      <Box width={2}>
+        {status ? <Text color={status.color}>{status.symbol}</Text> : <Text> </Text>}
+      </Box>
       <Box width={20}>
         <Link url={release.url}>
           <Text bold={selected}>{truncate(release.tagName, 18)}</Text>
         </Link>
       </Box>
-      {showName ? (
-        <Box flexGrow={1}>
+      <Box flexGrow={1}>
+        {detail ? (
           <Text dimColor wrap="truncate">
-            {release.name}
+            {detail}
           </Text>
-        </Box>
-      ) : (
-        <Box flexGrow={1} />
-      )}
-      {release.isLatest && (
-        <Box>
-          <Text color="green">latest</Text>
-        </Box>
-      )}
-      {release.isPrerelease && (
-        <Box>
-          <Text color="yellow">pre-release</Text>
-        </Box>
-      )}
-      {release.isDraft && (
-        <Box>
-          <Text color="gray">draft</Text>
-        </Box>
-      )}
+        ) : null}
+      </Box>
       <Box width={14}>
         <Text dimColor wrap="truncate">
           {truncate(release.author.login, 12)}

@@ -107,6 +107,7 @@ export async function openRunInBrowser(url: string): Promise<void> {
 interface RawRelease {
   tag_name: string;
   name: string;
+  body: string;
   published_at: string;
   draft: boolean;
   prerelease: boolean;
@@ -122,9 +123,11 @@ export async function fetchReleases(): Promise<Release[]> {
   return raw.map((r) => {
     const isLatest = !foundLatest && !r.draft && !r.prerelease;
     if (isLatest) foundLatest = true;
+    const firstLine = (r.body ?? "").split("\n").find((l) => l.trim()) ?? "";
     return {
       tagName: r.tag_name,
       name: r.name,
+      body: firstLine,
       publishedAt: r.published_at,
       isDraft: r.draft,
       isPrerelease: r.prerelease,

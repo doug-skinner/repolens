@@ -71,6 +71,7 @@ export interface WorkflowRun {
 export interface Release {
   tagName: string;
   name: string;
+  body: string;
   publishedAt: string;
   isDraft: boolean;
   isPrerelease: boolean;
