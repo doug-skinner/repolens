@@ -10,7 +10,8 @@
       "Bash(git push *)",
       "Bash(gh run *)",
       "Bash(gh release *)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "Bash(gh api *)"
     ]
   }
 }
