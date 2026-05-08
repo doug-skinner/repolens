@@ -5,24 +5,16 @@ interface FooterProps {
   activeView: View;
 }
 
-const GLOBAL_HINTS = [
-  "tab/shift+tab switch view",
-  "1-6 jump to view",
-  "r refresh",
-  "q quit",
-  "? help",
-];
-
-const LIST_HINTS = ["↑↓ navigate", "/ filter", "s sort", "m mine", "enter/d detail", "o open", "y copy url", "Y copy ref"];
-const RELEASE_HINTS = ["f type filter"];
+const DASHBOARD_HINTS = ["tab switch view", "1-6 jump", "r refresh", "? help"];
+const LIST_HINTS = ["/ filter", "s sort", "m mine", "d detail", "o open", "? help"];
+const RELEASE_HINTS = ["/ filter", "s sort", "m mine", "f type", "d detail", "o open", "? help"];
 
 export function Footer({ activeView }: FooterProps) {
-  const viewHints = activeView === "releases"
-    ? [...LIST_HINTS, ...RELEASE_HINTS]
-    : LIST_HINTS;
   const hints = activeView === "dashboard"
-    ? GLOBAL_HINTS
-    : [...viewHints, ...GLOBAL_HINTS];
+    ? DASHBOARD_HINTS
+    : activeView === "releases"
+      ? RELEASE_HINTS
+      : LIST_HINTS;
 
   return (
     <Box paddingX={1}>
