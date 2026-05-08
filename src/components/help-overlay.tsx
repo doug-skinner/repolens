@@ -21,7 +21,10 @@ const SECTIONS = [
     bindings: [
       ["↑/↓ or j/k", "Navigate items"],
       ["gg / G", "Jump to top / bottom"],
-      ["Enter / d", "Toggle detail pane"],
+      ["/", "Filter by title"],
+      ["Enter", "Confirm filter / toggle detail"],
+      ["Esc", "Clear filter"],
+      ["d", "Toggle detail pane"],
       ["o", "Open in browser"],
     ],
   },

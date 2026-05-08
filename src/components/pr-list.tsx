@@ -1,16 +1,20 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Box, Text } from "ink";
 import { PrRow } from "./pr-row.js";
 import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
+import { FilterInput } from "./filter-input.js";
 import { openPrInBrowser } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
+import { useListFilter } from "../hooks/use-list-filter.js";
 import { truncate } from "../lib/format.js";
+import { matchesFilter } from "../lib/filter.js";
 import type { PullRequest } from "../lib/types.js";
 
 interface PrListProps {
   prs: PullRequest[];
+  onFilteringChange?: (editing: boolean) => void;
 }
 
 function checkSymbol(status: string, conclusion: string): { symbol: string; color: string } {
@@ -59,19 +63,26 @@ function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
   );
 }
 
-export function PrList({ prs }: PrListProps) {
-  const onOpen = useCallback((i: number) => openPrInBrowser(prs[i].number), [prs]);
-  const onYank = useCallback((i: number) => copyToClipboard(prs[i].url), [prs]);
-  const onYankRef = useCallback((i: number) => copyToClipboard(`#${prs[i].number}`), [prs]);
-  const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(prs.length, { onOpen, onYank, onYankRef });
-  const visible = prs.slice(scrollOffset, scrollOffset + viewportHeight);
+export function PrList({ prs, onFilteringChange }: PrListProps) {
+  const filter = useListFilter(onFilteringChange);
+  const filtered = useMemo(
+    () => prs.filter((pr) => matchesFilter(pr.title, filter.filterQuery, pr.labels)),
+    [prs, filter.filterQuery],
+  );
 
-  const selected = prs[selectedIndex];
+  const onOpen = useCallback((i: number) => openPrInBrowser(filtered[i].number), [filtered]);
+  const onYank = useCallback((i: number) => copyToClipboard(filtered[i].url), [filtered]);
+  const onYankRef = useCallback((i: number) => copyToClipboard(`#${filtered[i].number}`), [filtered]);
+  const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
+    useListNavigation(filtered.length, { onOpen, onYank, onYankRef, filter });
+  const visible = filtered.slice(scrollOffset, scrollOffset + viewportHeight);
+
+  const selected = filtered[selectedIndex];
 
   return (
     <Box flexDirection="column">
       <Breadcrumb view="PRs" detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
+      <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={filtered.length} totalCount={prs.length} />
       <Box flexDirection="column">
         {visible.map((pr, i) => (
           <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} />

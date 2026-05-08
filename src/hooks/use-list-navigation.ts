@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useInput, useStdout } from "ink";
+import type { ListFilter } from "./use-list-filter.js";
 
 const GG_TIMEOUT_MS = 500;
 const LAYOUT_OVERHEAD = 7; // header (4) + breadcrumb (1) + margin (1) + footer (1)
@@ -9,18 +10,26 @@ interface ListNavigationOptions {
   onOpen: (index: number) => void;
   onYank?: (index: number) => void;
   onYankRef?: (index: number) => void;
+  filter?: ListFilter;
 }
 
 export function useListNavigation(length: number, options: ListNavigationOptions) {
-  const { onOpen, onYank, onYankRef } = options;
+  const { onOpen, onYank, onYankRef, filter } = options;
   const { stdout } = useStdout();
-  const totalAvailable = Math.max(1, (stdout?.rows ?? 24) - LAYOUT_OVERHEAD);
+  const filterBarVisible = filter ? (filter.isEditing || !!filter.filterQuery) : false;
+  const totalAvailable = Math.max(1, (stdout?.rows ?? 24) - LAYOUT_OVERHEAD - (filterBarVisible ? 1 : 0));
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showDetail, setShowDetail] = useState(false);
   const scrollOffsetRef = useRef(0);
   const gPending = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const filterQuery = filter?.filterQuery ?? "";
+  useEffect(() => {
+    setSelectedIndex(0);
+    scrollOffsetRef.current = 0;
+  }, [filterQuery]);
 
   const clearPendingG = useCallback(() => {
     gPending.current = false;
@@ -31,6 +40,37 @@ export function useListNavigation(length: number, options: ListNavigationOptions
   }, []);
 
   useInput((input, key) => {
+    if (filter?.isEditing) {
+      if (key.escape) {
+        filter.clearFilter();
+        return;
+      }
+      if (key.return) {
+        filter.confirmEditing();
+        return;
+      }
+      if (key.backspace || key.delete) {
+        filter.backspace();
+        return;
+      }
+      if (input && !key.ctrl && !key.meta) {
+        filter.appendChar(input);
+      }
+      return;
+    }
+
+    if (input === "/" && filter) {
+      clearPendingG();
+      filter.startEditing();
+      return;
+    }
+
+    if (key.escape && filter?.filterQuery) {
+      clearPendingG();
+      filter.clearFilter();
+      return;
+    }
+
     if (key.upArrow || input === "k") {
       clearPendingG();
       setSelectedIndex((i) => Math.max(0, i - 1));
@@ -65,19 +105,21 @@ export function useListNavigation(length: number, options: ListNavigationOptions
     }
   });
 
+  const safeIndex = length === 0 ? 0 : Math.min(selectedIndex, length - 1);
+
   const listHeight = showDetail
     ? Math.min(LIST_HEIGHT_WITH_DETAIL, totalAvailable)
     : totalAvailable;
   const detailHeight = showDetail ? totalAvailable - listHeight : 0;
 
   let offset = scrollOffsetRef.current;
-  if (selectedIndex < offset) offset = selectedIndex;
-  if (selectedIndex >= offset + listHeight) offset = selectedIndex - listHeight + 1;
+  if (safeIndex < offset) offset = safeIndex;
+  if (safeIndex >= offset + listHeight) offset = safeIndex - listHeight + 1;
   offset = Math.max(0, Math.min(offset, Math.max(0, length - listHeight)));
   scrollOffsetRef.current = offset;
 
   return {
-    selectedIndex,
+    selectedIndex: safeIndex,
     scrollOffset: offset,
     viewportHeight: listHeight,
     showDetail,

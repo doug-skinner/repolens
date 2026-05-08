@@ -33,6 +33,7 @@ export function App() {
   const { repo } = useRepoInfo();
   const [activeView, setActiveView] = useState<View>("dashboard");
   const [showHelp, setShowHelp] = useState(false);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   const refetchAll = useCallback(() => {
     refetchPrs();
@@ -46,7 +47,7 @@ export function App() {
   const { lastRefreshedAt, refreshNow } = useAutoRefresh({ refetch: refetchAll, paused: showHelp });
 
   useInput((input, key) => {
-    if (showHelp) return;
+    if (showHelp || isFiltering) return;
 
     if (input === "?") {
       setShowHelp(true);
@@ -105,7 +106,7 @@ export function App() {
       if (prs.length === 0) {
         return <EmptyState message="No open pull requests" />;
       }
-      return <PrList prs={prs} />;
+      return <PrList prs={prs} onFilteringChange={setIsFiltering} />;
     }
 
     if (activeView === "issues") {
@@ -127,7 +128,7 @@ export function App() {
       if (issues.length === 0) {
         return <EmptyState message="No open issues" />;
       }
-      return <IssueList issues={issues} />;
+      return <IssueList issues={issues} onFilteringChange={setIsFiltering} />;
     }
 
     if (activeView === "milestones") {
@@ -149,7 +150,7 @@ export function App() {
       if (milestones.length === 0) {
         return <EmptyState message="No open milestones" />;
       }
-      return <MilestoneList milestones={milestones} />;
+      return <MilestoneList milestones={milestones} onFilteringChange={setIsFiltering} />;
     }
 
     if (activeView === "actions") {
@@ -171,7 +172,7 @@ export function App() {
       if (runs.length === 0) {
         return <EmptyState message="No workflow runs" />;
       }
-      return <RunList runs={runs} />;
+      return <RunList runs={runs} onFilteringChange={setIsFiltering} />;
     }
 
     if (activeView === "releases") {
@@ -193,7 +194,7 @@ export function App() {
       if (releases.length === 0) {
         return <EmptyState message="No releases" />;
       }
-      return <ReleaseList releases={releases} />;
+      return <ReleaseList releases={releases} onFilteringChange={setIsFiltering} />;
     }
 
     return null;

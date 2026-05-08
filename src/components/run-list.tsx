@@ -1,16 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
 import { RunRow } from "./run-row.js";
 import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
+import { FilterInput } from "./filter-input.js";
 import { openRunInBrowser, fetchRunJobs } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
+import { useListFilter } from "../hooks/use-list-filter.js";
+import { matchesFilter } from "../lib/filter.js";
 import type { WorkflowRun, WorkflowJob } from "../lib/types.js";
 
 interface RunListProps {
   runs: WorkflowRun[];
+  onFilteringChange?: (editing: boolean) => void;
 }
 
 function jobSymbol(job: WorkflowJob): { symbol: string; color: string } {
@@ -83,19 +87,29 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
   );
 }
 
-export function RunList({ runs }: RunListProps) {
-  const onOpen = useCallback((i: number) => openRunInBrowser(runs[i].url), [runs]);
-  const onYank = useCallback((i: number) => copyToClipboard(runs[i].url), [runs]);
-  const onYankRef = useCallback((i: number) => copyToClipboard(String(runs[i].databaseId)), [runs]);
-  const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(runs.length, { onOpen, onYank, onYankRef });
-  const visible = runs.slice(scrollOffset, scrollOffset + viewportHeight);
+export function RunList({ runs, onFilteringChange }: RunListProps) {
+  const filter = useListFilter(onFilteringChange);
+  const filtered = useMemo(
+    () => runs.filter((run) =>
+      matchesFilter(run.displayTitle, filter.filterQuery) ||
+      matchesFilter(run.workflowName, filter.filterQuery),
+    ),
+    [runs, filter.filterQuery],
+  );
 
-  const selected = runs[selectedIndex];
+  const onOpen = useCallback((i: number) => openRunInBrowser(filtered[i].url), [filtered]);
+  const onYank = useCallback((i: number) => copyToClipboard(filtered[i].url), [filtered]);
+  const onYankRef = useCallback((i: number) => copyToClipboard(String(filtered[i].databaseId)), [filtered]);
+  const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
+    useListNavigation(filtered.length, { onOpen, onYank, onYankRef, filter });
+  const visible = filtered.slice(scrollOffset, scrollOffset + viewportHeight);
+
+  const selected = filtered[selectedIndex];
 
   return (
     <Box flexDirection="column">
       <Breadcrumb view="Actions" detail={showDetail && selected ? `${selected.workflowName}: ${selected.displayTitle}` : undefined} />
+      <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={filtered.length} totalCount={runs.length} />
       <Box flexDirection="column">
         {visible.map((run, i) => (
           <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} />
