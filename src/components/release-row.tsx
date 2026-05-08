@@ -18,7 +18,8 @@ function statusSymbol(release: Release): { symbol: string; color: string } | nul
 export function ReleaseRow({ release, selected }: ReleaseRowProps) {
   const showName = release.name && release.name !== release.tagName;
   const status = statusSymbol(release);
-  const detail = showName ? release.name : release.body;
+  const firstLine = release.body.split("\n").find((l) => l.trim()) ?? "";
+  const detail = showName ? release.name : firstLine;
 
   return (
     <Box gap={1}>

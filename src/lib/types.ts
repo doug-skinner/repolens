@@ -9,6 +9,7 @@ export interface PullRequest {
   headRefName: string;
   baseRefName: string;
   reviewDecision: string;
+  reviewRequests: { login: string }[];
   statusCheckRollup: StatusCheck[];
   url: string;
   isDraft: boolean;
@@ -41,7 +42,10 @@ export interface RepoInfo {
 export interface Issue {
   number: number;
   title: string;
+  body: string;
   author: { login: string };
+  assignees: { login: string }[];
+  milestone: { title: string } | null;
   labels: Label[];
   createdAt: string;
   url: string;
@@ -79,6 +83,12 @@ export interface Release {
   url: string;
   author: { login: string };
   downloadCount: number;
+}
+
+export interface WorkflowJob {
+  name: string;
+  status: string;
+  conclusion: string;
 }
 
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";

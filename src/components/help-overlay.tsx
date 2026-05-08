@@ -21,7 +21,8 @@ const SECTIONS = [
     bindings: [
       ["↑/↓ or j/k", "Navigate items"],
       ["gg / G", "Jump to top / bottom"],
-      ["Enter", "Open in browser"],
+      ["Enter / d", "Toggle detail pane"],
+      ["o", "Open in browser"],
     ],
   },
 ];

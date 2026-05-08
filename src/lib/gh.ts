@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import type { Issue, Milestone, PullRequest, Release, RepoInfo, WorkflowRun } from "./types.js";
+import type { Issue, Milestone, PullRequest, Release, RepoInfo, WorkflowJob, WorkflowRun } from "./types.js";
 
 const PR_FIELDS = [
   "number",
@@ -13,6 +13,7 @@ const PR_FIELDS = [
   "isDraft",
   "createdAt",
   "labels",
+  "reviewRequests",
   "additions",
   "deletions",
 ].join(",");
@@ -44,7 +45,10 @@ export async function openPrInBrowser(number: number): Promise<void> {
 const ISSUE_FIELDS = [
   "number",
   "title",
+  "body",
   "author",
+  "assignees",
+  "milestone",
   "labels",
   "createdAt",
   "url",
@@ -104,6 +108,12 @@ export async function openRunInBrowser(url: string): Promise<void> {
   await $`open ${url}`.quiet();
 }
 
+export async function fetchRunJobs(runId: number): Promise<WorkflowJob[]> {
+  const result = await $`gh run view ${runId} --json jobs`.quiet();
+  const { jobs } = result.json() as { jobs: WorkflowJob[] };
+  return jobs;
+}
+
 interface RawRelease {
   tag_name: string;
   name: string;
@@ -123,11 +133,10 @@ export async function fetchReleases(): Promise<Release[]> {
   return raw.map((r) => {
     const isLatest = !foundLatest && !r.draft && !r.prerelease;
     if (isLatest) foundLatest = true;
-    const firstLine = (r.body ?? "").split("\n").find((l) => l.trim()) ?? "";
     return {
       tagName: r.tag_name,
       name: r.name,
-      body: firstLine,
+      body: r.body ?? "",
       publishedAt: r.published_at,
       isDraft: r.draft,
       isPrerelease: r.prerelease,
