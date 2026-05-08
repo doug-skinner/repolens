@@ -70,6 +70,7 @@ export interface WorkflowRun {
   headBranch: string;
   createdAt: string;
   url: string;
+  actor: { login: string };
 }
 
 export interface Release {

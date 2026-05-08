@@ -18,6 +18,7 @@ import { useWorkflowRuns } from "./hooks/use-workflow-runs.js";
 import { useReleases } from "./hooks/use-releases.js";
 import { useReviewRequests } from "./hooks/use-review-requests.js";
 import { useRepoInfo } from "./hooks/use-repo-info.js";
+import { useAuthUser } from "./hooks/use-auth-user.js";
 import { useAutoRefresh } from "./hooks/use-auto-refresh.js";
 import { VIEWS, type View } from "./lib/types.js";
 
@@ -31,6 +32,7 @@ export function App() {
   const { releases, loading: relLoading, error: relError, refetch: refetchRel } = useReleases();
   const { count: reviewRequestCount, refetch: refetchReviews } = useReviewRequests();
   const { repo } = useRepoInfo();
+  const { username } = useAuthUser();
   const [activeView, setActiveView] = useState<View>("dashboard");
   const [showHelp, setShowHelp] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -106,7 +108,7 @@ export function App() {
       if (prs.length === 0) {
         return <EmptyState message="No open pull requests" />;
       }
-      return <PrList prs={prs} onFilteringChange={setIsFiltering} />;
+      return <PrList prs={prs} username={username} onFilteringChange={setIsFiltering} />;
     }
 
     if (activeView === "issues") {
@@ -128,7 +130,7 @@ export function App() {
       if (issues.length === 0) {
         return <EmptyState message="No open issues" />;
       }
-      return <IssueList issues={issues} onFilteringChange={setIsFiltering} />;
+      return <IssueList issues={issues} username={username} onFilteringChange={setIsFiltering} />;
     }
 
     if (activeView === "milestones") {
@@ -172,7 +174,7 @@ export function App() {
       if (runs.length === 0) {
         return <EmptyState message="No workflow runs" />;
       }
-      return <RunList runs={runs} onFilteringChange={setIsFiltering} />;
+      return <RunList runs={runs} username={username} onFilteringChange={setIsFiltering} />;
     }
 
     if (activeView === "releases") {
@@ -194,7 +196,7 @@ export function App() {
       if (releases.length === 0) {
         return <EmptyState message="No releases" />;
       }
-      return <ReleaseList releases={releases} onFilteringChange={setIsFiltering} />;
+      return <ReleaseList releases={releases} username={username} onFilteringChange={setIsFiltering} />;
     }
 
     return null;

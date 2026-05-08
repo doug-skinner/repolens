@@ -23,6 +23,11 @@ export async function checkGhAuth(): Promise<boolean> {
   return result.exitCode === 0;
 }
 
+export async function fetchAuthenticatedUser(): Promise<string> {
+  const result = await $`gh api user --jq .login`.quiet();
+  return result.text().trim();
+}
+
 export async function fetchPullRequests(): Promise<PullRequest[]> {
   const result =
     await $`gh pr list --json ${PR_FIELDS} --limit 30`.quiet();
@@ -108,6 +113,7 @@ const RUN_FIELDS = [
   "headBranch",
   "createdAt",
   "url",
+  "actor",
 ].join(",");
 
 export async function fetchWorkflowRuns(): Promise<WorkflowRun[]> {

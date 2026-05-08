@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Box, Text } from "ink";
 import { PrRow } from "./pr-row.js";
 import { DetailPane } from "./detail-pane.js";
@@ -22,6 +22,7 @@ const SORT_OPTIONS = [
 
 interface PrListProps {
   prs: PullRequest[];
+  username: string | null;
   onFilteringChange?: (editing: boolean) => void;
 }
 
@@ -71,29 +72,40 @@ function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
   );
 }
 
-export function PrList({ prs, onFilteringChange }: PrListProps) {
+export function PrList({ prs, username, onFilteringChange }: PrListProps) {
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
+  const [mine, setMine] = useState(false);
+
+  const toggleMine = useCallback(() => setMine((v) => !v), []);
 
   const sorted = useMemo(() => {
-    const items = prs.filter((pr) => matchesFilter(pr.title, filter.filterQuery, pr.labels));
+    let items = prs.filter((pr) => matchesFilter(pr.title, filter.filterQuery, pr.labels));
+    if (mine && username) {
+      items = items.filter((pr) =>
+        pr.author.login === username || pr.reviewRequests.some((r) => r.login === username),
+      );
+    }
     if (sort.current === "oldest") items.sort((a, b) => byDateAsc(a.createdAt, b.createdAt));
     else if (sort.current === "title") items.sort((a, b) => byStringAsc(a.title, b.title));
     else if (sort.current === "newest") items.sort((a, b) => byDateDesc(a.createdAt, b.createdAt));
     return items;
-  }, [prs, filter.filterQuery, sort.current]);
+  }, [prs, filter.filterQuery, mine, username, sort.current]);
 
-  const extraKeys = useMemo(() => ({ s: sort.cycleSort }), [sort.cycleSort]);
+  const extraKeys = useMemo(() => ({ s: sort.cycleSort, m: toggleMine }), [sort.cycleSort, toggleMine]);
 
   const onOpen = useCallback((i: number) => openPrInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
   const onYankRef = useCallback((i: number) => copyToClipboard(`#${sorted[i].number}`), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: `${mine}:${sort.current}` });
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
-  const viewLabel = sort.current === "newest" ? "PRs" : `PRs [${sort.label}]`;
+  const tags: string[] = [];
+  if (mine) tags.push("Mine");
+  if (sort.current !== "newest") tags.push(sort.label);
+  const viewLabel = tags.length > 0 ? `PRs [${tags.join(", ")}]` : "PRs";
 
   return (
     <Box flexDirection="column">

@@ -32,6 +32,7 @@ function matchesReleaseType(release: Release, type: ReleaseType): boolean {
 
 interface ReleaseListProps {
   releases: Release[];
+  username: string | null;
   onFilteringChange?: (editing: boolean) => void;
 }
 
@@ -57,31 +58,37 @@ const SORT_OPTIONS = [
   { key: "downloads", label: "Downloads" },
 ] as const;
 
-export function ReleaseList({ releases, onFilteringChange }: ReleaseListProps) {
+export function ReleaseList({ releases, username, onFilteringChange }: ReleaseListProps) {
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
   const [releaseType, setReleaseType] = useState<ReleaseType>("all");
+  const [mine, setMine] = useState(false);
 
   const cycleType = useCallback(() => {
     setReleaseType((t) => RELEASE_TYPES[(RELEASE_TYPES.indexOf(t) + 1) % RELEASE_TYPES.length]);
   }, []);
 
-  const extraKeys = useMemo(() => ({ f: cycleType, s: sort.cycleSort }), [cycleType, sort.cycleSort]);
+  const toggleMine = useCallback(() => setMine((v) => !v), []);
+
+  const extraKeys = useMemo(() => ({ f: cycleType, s: sort.cycleSort, m: toggleMine }), [cycleType, sort.cycleSort, toggleMine]);
 
   const sorted = useMemo(() => {
-    const items = releases.filter((r) =>
+    let items = releases.filter((r) =>
       matchesReleaseType(r, releaseType) && (
         matchesFilter(r.tagName, filter.filterQuery) ||
         (r.name && matchesFilter(r.name, filter.filterQuery))
       ),
     );
+    if (mine && username) {
+      items = items.filter((r) => r.author.login === username);
+    }
     if (sort.current === "oldest") items.sort((a, b) => byDateAsc(a.publishedAt, b.publishedAt));
     else if (sort.current === "downloads") items.sort((a, b) => byNumberDesc(a.downloadCount, b.downloadCount));
     else if (sort.current === "newest") items.sort((a, b) => byDateDesc(a.publishedAt, b.publishedAt));
     return items;
-  }, [releases, filter.filterQuery, releaseType, sort.current]);
+  }, [releases, filter.filterQuery, releaseType, mine, username, sort.current]);
 
-  const resetTrigger = `${releaseType}:${sort.current}`;
+  const resetTrigger = `${releaseType}:${mine}:${sort.current}`;
 
   const onOpen = useCallback((i: number) => openReleaseInBrowser(sorted[i].tagName), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
@@ -96,6 +103,7 @@ export function ReleaseList({ releases, onFilteringChange }: ReleaseListProps) {
     : undefined;
 
   const tags: string[] = [];
+  if (mine) tags.push("Mine");
   if (releaseType !== "all") tags.push(RELEASE_TYPE_LABELS[releaseType]);
   if (sort.current !== "newest") tags.push(sort.label);
   const viewLabel = tags.length > 0 ? `Releases [${tags.join(", ")}]` : "Releases";

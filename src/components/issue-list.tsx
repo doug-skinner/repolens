@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Box, Text } from "ink";
 import { IssueRow } from "./issue-row.js";
 import { DetailPane } from "./detail-pane.js";
@@ -21,6 +21,7 @@ const SORT_OPTIONS = [
 
 interface IssueListProps {
   issues: Issue[];
+  username: string | null;
   onFilteringChange?: (editing: boolean) => void;
 }
 
@@ -56,29 +57,40 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
   );
 }
 
-export function IssueList({ issues, onFilteringChange }: IssueListProps) {
+export function IssueList({ issues, username, onFilteringChange }: IssueListProps) {
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
+  const [mine, setMine] = useState(false);
+
+  const toggleMine = useCallback(() => setMine((v) => !v), []);
 
   const sorted = useMemo(() => {
-    const items = issues.filter((issue) => matchesFilter(issue.title, filter.filterQuery, issue.labels));
+    let items = issues.filter((issue) => matchesFilter(issue.title, filter.filterQuery, issue.labels));
+    if (mine && username) {
+      items = items.filter((issue) =>
+        issue.author.login === username || issue.assignees.some((a) => a.login === username),
+      );
+    }
     if (sort.current === "oldest") items.sort((a, b) => byDateAsc(a.createdAt, b.createdAt));
     else if (sort.current === "title") items.sort((a, b) => byStringAsc(a.title, b.title));
     else if (sort.current === "newest") items.sort((a, b) => byDateDesc(a.createdAt, b.createdAt));
     return items;
-  }, [issues, filter.filterQuery, sort.current]);
+  }, [issues, filter.filterQuery, mine, username, sort.current]);
 
-  const extraKeys = useMemo(() => ({ s: sort.cycleSort }), [sort.cycleSort]);
+  const extraKeys = useMemo(() => ({ s: sort.cycleSort, m: toggleMine }), [sort.cycleSort, toggleMine]);
 
   const onOpen = useCallback((i: number) => openIssueInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
   const onYankRef = useCallback((i: number) => copyToClipboard(`#${sorted[i].number}`), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: `${mine}:${sort.current}` });
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
-  const viewLabel = sort.current === "newest" ? "Issues" : `Issues [${sort.label}]`;
+  const tags: string[] = [];
+  if (mine) tags.push("Mine");
+  if (sort.current !== "newest") tags.push(sort.label);
+  const viewLabel = tags.length > 0 ? `Issues [${tags.join(", ")}]` : "Issues";
 
   return (
     <Box flexDirection="column">

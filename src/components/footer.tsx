@@ -13,7 +13,7 @@ const GLOBAL_HINTS = [
   "? help",
 ];
 
-const LIST_HINTS = ["↑↓ navigate", "/ filter", "s sort", "enter/d detail", "o open", "y copy url", "Y copy ref"];
+const LIST_HINTS = ["↑↓ navigate", "/ filter", "s sort", "m mine", "enter/d detail", "o open", "y copy url", "Y copy ref"];
 const RELEASE_HINTS = ["f type filter"];
 
 export function Footer({ activeView }: FooterProps) {
