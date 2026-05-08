@@ -11,10 +11,12 @@ interface ListNavigationOptions {
   onYank?: (index: number) => void;
   onYankRef?: (index: number) => void;
   filter?: ListFilter;
+  extraKeys?: Record<string, () => void>;
+  resetTrigger?: string | number;
 }
 
 export function useListNavigation(length: number, options: ListNavigationOptions) {
-  const { onOpen, onYank, onYankRef, filter } = options;
+  const { onOpen, onYank, onYankRef, filter, extraKeys } = options;
   const { stdout } = useStdout();
   const filterBarVisible = filter ? (filter.isEditing || !!filter.filterQuery) : false;
   const totalAvailable = Math.max(1, (stdout?.rows ?? 24) - LAYOUT_OVERHEAD - (filterBarVisible ? 1 : 0));
@@ -26,10 +28,11 @@ export function useListNavigation(length: number, options: ListNavigationOptions
   const gTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const filterQuery = filter?.filterQuery ?? "";
+  const resetTrigger = options.resetTrigger;
   useEffect(() => {
     setSelectedIndex(0);
     scrollOffsetRef.current = 0;
-  }, [filterQuery]);
+  }, [filterQuery, resetTrigger]);
 
   const clearPendingG = useCallback(() => {
     gPending.current = false;
@@ -68,6 +71,12 @@ export function useListNavigation(length: number, options: ListNavigationOptions
     if (key.escape && filter?.filterQuery) {
       clearPendingG();
       filter.clearFilter();
+      return;
+    }
+
+    if (extraKeys?.[input]) {
+      clearPendingG();
+      extraKeys[input]();
       return;
     }
 

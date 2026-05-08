@@ -14,11 +14,15 @@ const GLOBAL_HINTS = [
 ];
 
 const LIST_HINTS = ["↑↓ navigate", "/ filter", "enter/d detail", "o open", "y copy url", "Y copy ref"];
+const RELEASE_HINTS = ["f type filter"];
 
 export function Footer({ activeView }: FooterProps) {
+  const viewHints = activeView === "releases"
+    ? [...LIST_HINTS, ...RELEASE_HINTS]
+    : LIST_HINTS;
   const hints = activeView === "dashboard"
     ? GLOBAL_HINTS
-    : [...LIST_HINTS, ...GLOBAL_HINTS];
+    : [...viewHints, ...GLOBAL_HINTS];
 
   return (
     <Box paddingX={1}>

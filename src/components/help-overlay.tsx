@@ -28,6 +28,12 @@ const SECTIONS = [
       ["o", "Open in browser"],
     ],
   },
+  {
+    title: "Releases",
+    bindings: [
+      ["f", "Cycle type filter (All/Stable/Pre-release/Draft)"],
+    ],
+  },
 ];
 
 export function HelpOverlay({ onClose }: HelpOverlayProps) {
