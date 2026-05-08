@@ -60,10 +60,23 @@ export async function openIssueInBrowser(number: number): Promise<void> {
   await $`gh issue view ${number} --web`.quiet();
 }
 
+function parseVersion(title: string): [number, number, number] {
+  const m = title.match(/v?(\d+)\.(\d+)\.(\d+)/);
+  if (!m) return [Infinity, Infinity, Infinity];
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
 export async function fetchMilestones(): Promise<Milestone[]> {
-  const result =
-    await $`gh api repos/{owner}/{repo}/milestones --jq 'sort_by(.title | ascii_downcase)'`.quiet();
-  return JSON.parse(result.text());
+  const result = await $`gh api repos/{owner}/{repo}/milestones`.quiet();
+  const milestones: Milestone[] = JSON.parse(result.text());
+  return milestones.sort((a, b) => {
+    const va = parseVersion(a.title);
+    const vb = parseVersion(b.title);
+    for (let i = 0; i < 3; i++) {
+      if (va[i] !== vb[i]) return va[i] - vb[i];
+    }
+    return 0;
+  });
 }
 
 export async function openMilestoneInBrowser(url: string): Promise<void> {
