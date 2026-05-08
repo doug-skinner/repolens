@@ -76,6 +76,8 @@ export interface Release {
   isPrerelease: boolean;
   isLatest: boolean;
   url: string;
+  author: { login: string };
+  downloadCount: number;
 }
 
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";

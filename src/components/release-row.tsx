@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import Link from "ink-link";
 import { timeAgo, truncate } from "../lib/format.js";
 import type { Release } from "../lib/types.js";
 
@@ -8,22 +9,25 @@ interface ReleaseRowProps {
 }
 
 export function ReleaseRow({ release, selected }: ReleaseRowProps) {
+  const showName = release.name && release.name !== release.tagName;
+
   return (
     <Box gap={1}>
       <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
       <Box width={20}>
-        <Text bold={selected} wrap="truncate">
-          {truncate(release.tagName, 18)}
-        </Text>
+        <Link url={release.url}>
+          <Text bold={selected}>{truncate(release.tagName, 18)}</Text>
+        </Link>
       </Box>
-      <Box width={40}>
-        <Text dimColor wrap="truncate">
-          {truncate(release.name, 38)}
-        </Text>
-      </Box>
-      <Box width={9}>
-        <Text dimColor>{timeAgo(release.publishedAt)}</Text>
-      </Box>
+      {showName ? (
+        <Box flexGrow={1}>
+          <Text dimColor wrap="truncate">
+            {release.name}
+          </Text>
+        </Box>
+      ) : (
+        <Box flexGrow={1} />
+      )}
       {release.isLatest && (
         <Box>
           <Text color="green">latest</Text>
@@ -39,6 +43,19 @@ export function ReleaseRow({ release, selected }: ReleaseRowProps) {
           <Text color="gray">draft</Text>
         </Box>
       )}
+      <Box width={14}>
+        <Text dimColor wrap="truncate">
+          {truncate(release.author.login, 12)}
+        </Text>
+      </Box>
+      {release.downloadCount > 0 && (
+        <Box width={10}>
+          <Text dimColor>↓ {release.downloadCount}</Text>
+        </Box>
+      )}
+      <Box width={9}>
+        <Text dimColor>{timeAgo(release.publishedAt)}</Text>
+      </Box>
     </Box>
   );
 }

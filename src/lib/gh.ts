@@ -104,20 +104,36 @@ export async function openRunInBrowser(url: string): Promise<void> {
   await $`open ${url}`.quiet();
 }
 
-const RELEASE_FIELDS = [
-  "tagName",
-  "name",
-  "publishedAt",
-  "isDraft",
-  "isPrerelease",
-  "isLatest",
-  "url",
-].join(",");
+interface RawRelease {
+  tag_name: string;
+  name: string;
+  published_at: string;
+  draft: boolean;
+  prerelease: boolean;
+  html_url: string;
+  author: { login: string };
+  assets: { download_count: number }[];
+}
 
 export async function fetchReleases(): Promise<Release[]> {
-  const result =
-    await $`gh release list --json ${RELEASE_FIELDS} --limit 30`.quiet();
-  return result.json();
+  const result = await $`gh api repos/{owner}/{repo}/releases?per_page=30`.quiet();
+  const raw: RawRelease[] = JSON.parse(result.text());
+  let foundLatest = false;
+  return raw.map((r) => {
+    const isLatest = !foundLatest && !r.draft && !r.prerelease;
+    if (isLatest) foundLatest = true;
+    return {
+      tagName: r.tag_name,
+      name: r.name,
+      publishedAt: r.published_at,
+      isDraft: r.draft,
+      isPrerelease: r.prerelease,
+      isLatest,
+      url: r.html_url,
+      author: { login: r.author.login },
+      downloadCount: r.assets.reduce((sum, a) => sum + a.download_count, 0),
+    };
+  });
 }
 
 export async function openReleaseInBrowser(tagName: string): Promise<void> {
