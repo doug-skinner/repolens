@@ -15,7 +15,9 @@
       "Bash(gh milestone *)",
       "Bash(git -C /Users/dougskinner/brand/repolens push origin main)",
       "Bash(bun add *)",
-      "Bash(bun test *)"
+      "Bash(bun test *)",
+      "Bash(git -C /Users/dougskinner/brand/repolens status)",
+      "Bash(git -C /Users/dougskinner/brand/repolens log --oneline -5)"
     ]
   }
 }
