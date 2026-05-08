@@ -62,7 +62,7 @@ export async function openIssueInBrowser(number: number): Promise<void> {
 
 export async function fetchMilestones(): Promise<Milestone[]> {
   const result =
-    await $`gh api repos/{owner}/{repo}/milestones --jq 'sort_by(.due_on // "9999") | reverse'`.quiet();
+    await $`gh api repos/{owner}/{repo}/milestones --jq 'sort_by(.title | ascii_downcase)'`.quiet();
   return JSON.parse(result.text());
 }
 
