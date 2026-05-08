@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
 import Link from "ink-link";
-import { CheckBadge, ReviewBadge } from "./status-badge.js";
+import { CheckBadge, ReviewBadge, SizeBadge } from "./status-badge.js";
 import { timeAgo, summarizeChecks, truncate } from "../lib/format.js";
 import type { PullRequest } from "../lib/types.js";
 
@@ -39,6 +39,9 @@ export function PrRow({ pr, selected }: PrRowProps) {
       </Box>
       <Box width={11}>
         <ReviewBadge decision={pr.reviewDecision} />
+      </Box>
+      <Box width={4}>
+        <SizeBadge linesChanged={pr.additions + pr.deletions} />
       </Box>
       <Box width={9}>
         <Text dimColor>{timeAgo(pr.createdAt)}</Text>

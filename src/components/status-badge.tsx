@@ -30,3 +30,15 @@ export function ReviewBadge({ decision }: { decision: string }) {
   if (!Badge) return <Text dimColor>— review  </Text>;
   return <Badge />;
 }
+
+function prSize(linesChanged: number): { label: string; color: string } {
+  if (linesChanged < 50) return { label: "S", color: "green" };
+  if (linesChanged < 250) return { label: "M", color: "yellow" };
+  if (linesChanged < 1000) return { label: "L", color: "magenta" };
+  return { label: "XL", color: "red" };
+}
+
+export function SizeBadge({ linesChanged }: { linesChanged: number }) {
+  const { label, color } = prSize(linesChanged);
+  return <Text color={color}>{label}</Text>;
+}
