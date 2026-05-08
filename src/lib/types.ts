@@ -57,6 +57,17 @@ export interface Milestone {
   html_url: string;
 }
 
+export interface WorkflowRun {
+  databaseId: number;
+  displayTitle: string;
+  workflowName: string;
+  status: string;
+  conclusion: string;
+  headBranch: string;
+  createdAt: string;
+  url: string;
+}
+
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";
 
 export const VIEWS = ["prs", "issues", "actions", "milestones", "releases"] as const;

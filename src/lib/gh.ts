@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import type { Issue, Milestone, PullRequest, RepoInfo } from "./types.js";
+import type { Issue, Milestone, PullRequest, RepoInfo, WorkflowRun } from "./types.js";
 
 const PR_FIELDS = [
   "number",
@@ -67,5 +67,26 @@ export async function fetchMilestones(): Promise<Milestone[]> {
 }
 
 export async function openMilestoneInBrowser(url: string): Promise<void> {
+  await $`open ${url}`.quiet();
+}
+
+const RUN_FIELDS = [
+  "databaseId",
+  "displayTitle",
+  "workflowName",
+  "status",
+  "conclusion",
+  "headBranch",
+  "createdAt",
+  "url",
+].join(",");
+
+export async function fetchWorkflowRuns(): Promise<WorkflowRun[]> {
+  const result =
+    await $`gh run list --json ${RUN_FIELDS} --limit 30`.quiet();
+  return result.json();
+}
+
+export async function openRunInBrowser(url: string): Promise<void> {
   await $`open ${url}`.quiet();
 }
