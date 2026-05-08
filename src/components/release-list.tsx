@@ -11,12 +11,13 @@ interface ReleaseListProps {
 
 export function ReleaseList({ releases }: ReleaseListProps) {
   const onSelect = useCallback((i: number) => openReleaseInBrowser(releases[i].tagName), [releases]);
-  const selectedIndex = useListNavigation(releases.length, onSelect);
+  const { selectedIndex, scrollOffset, viewportHeight } = useListNavigation(releases.length, onSelect);
+  const visible = releases.slice(scrollOffset, scrollOffset + viewportHeight);
 
   return (
     <Box flexDirection="column">
-      {releases.map((release, i) => (
-        <ReleaseRow key={release.tagName} release={release} selected={i === selectedIndex} />
+      {visible.map((release, i) => (
+        <ReleaseRow key={release.tagName} release={release} selected={scrollOffset + i === selectedIndex} />
       ))}
     </Box>
   );

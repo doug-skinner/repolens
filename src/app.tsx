@@ -192,9 +192,9 @@ export function App() {
   };
 
   return (
-    <Box flexDirection="column" paddingX={1} minHeight={stdout?.rows}>
+    <Box flexDirection="column" paddingX={1} height={stdout?.rows}>
       <Header repo={repo} prCount={prs.length} issueCount={issues.length} activeView={activeView} />
-      <Box marginTop={1} flexDirection="column" flexGrow={1}>
+      <Box marginTop={1} flexDirection="column" flexGrow={1} overflow="hidden">
         {showHelp ? <HelpOverlay onClose={() => setShowHelp(false)} /> : renderView()}
       </Box>
       {!showHelp && <Footer activeView={activeView} />}

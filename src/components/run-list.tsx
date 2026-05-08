@@ -11,12 +11,13 @@ interface RunListProps {
 
 export function RunList({ runs }: RunListProps) {
   const onSelect = useCallback((i: number) => openRunInBrowser(runs[i].url), [runs]);
-  const selectedIndex = useListNavigation(runs.length, onSelect);
+  const { selectedIndex, scrollOffset, viewportHeight } = useListNavigation(runs.length, onSelect);
+  const visible = runs.slice(scrollOffset, scrollOffset + viewportHeight);
 
   return (
     <Box flexDirection="column">
-      {runs.map((run, i) => (
-        <RunRow key={run.databaseId} run={run} selected={i === selectedIndex} />
+      {visible.map((run, i) => (
+        <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} />
       ))}
     </Box>
   );

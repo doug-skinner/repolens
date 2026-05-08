@@ -11,12 +11,13 @@ interface MilestoneListProps {
 
 export function MilestoneList({ milestones }: MilestoneListProps) {
   const onSelect = useCallback((i: number) => openMilestoneInBrowser(milestones[i].html_url), [milestones]);
-  const selectedIndex = useListNavigation(milestones.length, onSelect);
+  const { selectedIndex, scrollOffset, viewportHeight } = useListNavigation(milestones.length, onSelect);
+  const visible = milestones.slice(scrollOffset, scrollOffset + viewportHeight);
 
   return (
     <Box flexDirection="column">
-      {milestones.map((ms, i) => (
-        <MilestoneRow key={ms.number} milestone={ms} selected={i === selectedIndex} />
+      {visible.map((ms, i) => (
+        <MilestoneRow key={ms.number} milestone={ms} selected={scrollOffset + i === selectedIndex} />
       ))}
     </Box>
   );

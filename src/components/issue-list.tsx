@@ -11,12 +11,13 @@ interface IssueListProps {
 
 export function IssueList({ issues }: IssueListProps) {
   const onSelect = useCallback((i: number) => openIssueInBrowser(issues[i].number), [issues]);
-  const selectedIndex = useListNavigation(issues.length, onSelect);
+  const { selectedIndex, scrollOffset, viewportHeight } = useListNavigation(issues.length, onSelect);
+  const visible = issues.slice(scrollOffset, scrollOffset + viewportHeight);
 
   return (
     <Box flexDirection="column">
-      {issues.map((issue, i) => (
-        <IssueRow key={issue.number} issue={issue} selected={i === selectedIndex} />
+      {visible.map((issue, i) => (
+        <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} />
       ))}
     </Box>
   );

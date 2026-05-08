@@ -11,12 +11,13 @@ interface PrListProps {
 
 export function PrList({ prs }: PrListProps) {
   const onSelect = useCallback((i: number) => openPrInBrowser(prs[i].number), [prs]);
-  const selectedIndex = useListNavigation(prs.length, onSelect);
+  const { selectedIndex, scrollOffset, viewportHeight } = useListNavigation(prs.length, onSelect);
+  const visible = prs.slice(scrollOffset, scrollOffset + viewportHeight);
 
   return (
     <Box flexDirection="column">
-      {prs.map((pr, i) => (
-        <PrRow key={pr.number} pr={pr} selected={i === selectedIndex} />
+      {visible.map((pr, i) => (
+        <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} />
       ))}
     </Box>
   );
