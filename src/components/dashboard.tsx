@@ -143,15 +143,17 @@ export function Dashboard({ prs, issues, runs, milestones, releases, loading }: 
     );
   }
 
+  const COL = 38;
+
   return (
     <Box flexDirection="column" gap={1} paddingX={1}>
-      <Box gap={4}>
-        <PrSection prs={prs} />
-        <IssueSection issues={issues} />
+      <Box gap={2}>
+        <Box width={COL} flexShrink={0} flexDirection="column"><PrSection prs={prs} /></Box>
+        <Box flexDirection="column"><IssueSection issues={issues} /></Box>
       </Box>
-      <Box gap={4}>
-        <ActionsSection runs={runs} />
-        <MilestoneSection milestones={milestones} />
+      <Box gap={2}>
+        <Box width={COL} flexShrink={0} flexDirection="column"><ActionsSection runs={runs} /></Box>
+        <Box flexDirection="column"><MilestoneSection milestones={milestones} /></Box>
       </Box>
       <ReleaseSection releases={releases} />
     </Box>
