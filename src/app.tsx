@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Box, Text, useInput, useApp, useStdout } from "ink";
 import Spinner from "ink-spinner";
 import { Header } from "./components/header.js";
@@ -18,6 +18,7 @@ import { useWorkflowRuns } from "./hooks/use-workflow-runs.js";
 import { useReleases } from "./hooks/use-releases.js";
 import { useReviewRequests } from "./hooks/use-review-requests.js";
 import { useRepoInfo } from "./hooks/use-repo-info.js";
+import { useAutoRefresh } from "./hooks/use-auto-refresh.js";
 import { VIEWS, type View } from "./lib/types.js";
 
 export function App() {
@@ -33,6 +34,17 @@ export function App() {
   const [activeView, setActiveView] = useState<View>("dashboard");
   const [showHelp, setShowHelp] = useState(false);
 
+  const refetchAll = useCallback(() => {
+    refetchPrs();
+    refetchIssues();
+    refetchMs();
+    refetchRuns();
+    refetchRel();
+    refetchReviews();
+  }, [refetchPrs, refetchIssues, refetchMs, refetchRuns, refetchRel, refetchReviews]);
+
+  const { lastRefreshedAt, refreshNow } = useAutoRefresh({ refetch: refetchAll, paused: showHelp });
+
   useInput((input, key) => {
     if (showHelp) return;
 
@@ -42,14 +54,7 @@ export function App() {
     }
 
     if (input === "q") exit();
-    if (input === "r") {
-      refetchPrs();
-      refetchIssues();
-      refetchMs();
-      refetchRuns();
-      refetchRel();
-      refetchReviews();
-    }
+    if (input === "r") refreshNow();
 
     if (key.tab) {
       setActiveView((v) => {
@@ -196,7 +201,7 @@ export function App() {
 
   return (
     <Box flexDirection="column" paddingX={1} height={stdout?.rows}>
-      <Header repo={repo} prCount={prs.length} issueCount={issues.length} reviewRequestCount={reviewRequestCount} activeView={activeView} />
+      <Header repo={repo} prCount={prs.length} issueCount={issues.length} reviewRequestCount={reviewRequestCount} activeView={activeView} lastRefreshedAt={lastRefreshedAt} />
       <Box marginTop={1} flexDirection="column" flexGrow={1} overflow="hidden">
         {showHelp ? <HelpOverlay onClose={() => setShowHelp(false)} /> : renderView()}
       </Box>

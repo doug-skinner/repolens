@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
 import { VIEWS, VIEW_LABELS, type View, type RepoInfo } from "../lib/types.js";
+import { timeAgo } from "../lib/format.js";
 
 interface HeaderProps {
   repo: RepoInfo | null;
@@ -7,9 +8,10 @@ interface HeaderProps {
   issueCount: number;
   reviewRequestCount: number;
   activeView: View;
+  lastRefreshedAt: Date | null;
 }
 
-export function Header({ repo, prCount, issueCount, reviewRequestCount, activeView }: HeaderProps) {
+export function Header({ repo, prCount, issueCount, reviewRequestCount, activeView, lastRefreshedAt }: HeaderProps) {
   return (
     <Box
       flexDirection="column"
@@ -32,6 +34,10 @@ export function Header({ repo, prCount, issueCount, reviewRequestCount, activeVi
             <Text color="magenta"> · {reviewRequestCount} review{reviewRequestCount !== 1 ? "s" : ""}</Text>
           )}
         </Text>
+        <Box flexGrow={1} />
+        {lastRefreshedAt && (
+          <Text dimColor>↻ {timeAgo(lastRefreshedAt.toISOString())}</Text>
+        )}
       </Box>
       <Box gap={1}>
         {VIEWS.map((view, i) => (
