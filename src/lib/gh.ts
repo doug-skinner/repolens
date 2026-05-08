@@ -111,6 +111,7 @@ const RELEASE_FIELDS = [
   "isDraft",
   "isPrerelease",
   "isLatest",
+  "url",
 ].join(",");
 
 export async function fetchReleases(): Promise<Release[]> {

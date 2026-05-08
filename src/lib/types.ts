@@ -75,6 +75,7 @@ export interface Release {
   isDraft: boolean;
   isPrerelease: boolean;
   isLatest: boolean;
+  url: string;
 }
 
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";

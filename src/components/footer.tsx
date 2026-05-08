@@ -13,7 +13,7 @@ const GLOBAL_HINTS = [
   "? help",
 ];
 
-const LIST_HINTS = ["↑↓ navigate", "enter open"];
+const LIST_HINTS = ["↑↓ navigate", "enter open", "y copy url", "Y copy ref"];
 
 export function Footer({ activeView }: FooterProps) {
   const hints = activeView === "dashboard"

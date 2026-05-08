@@ -4,7 +4,14 @@ import { useInput, useStdout } from "ink";
 const GG_TIMEOUT_MS = 500;
 const LAYOUT_OVERHEAD = 6; // header (4) + margin (1) + footer (1)
 
-export function useListNavigation(length: number, onSelect: (index: number) => void) {
+interface ListNavigationOptions {
+  onSelect: (index: number) => void;
+  onYank?: (index: number) => void;
+  onYankRef?: (index: number) => void;
+}
+
+export function useListNavigation(length: number, options: ListNavigationOptions) {
+  const { onSelect, onYank, onYankRef } = options;
   const { stdout } = useStdout();
   const viewportHeight = Math.max(1, (stdout?.rows ?? 24) - LAYOUT_OVERHEAD);
 
@@ -39,6 +46,12 @@ export function useListNavigation(length: number, onSelect: (index: number) => v
         gPending.current = true;
         gTimer.current = setTimeout(clearPendingG, GG_TIMEOUT_MS);
       }
+    } else if (input === "y") {
+      clearPendingG();
+      onYank?.(selectedIndex);
+    } else if (input === "Y") {
+      clearPendingG();
+      onYankRef?.(selectedIndex);
     } else if (key.return) {
       clearPendingG();
       onSelect(selectedIndex);
