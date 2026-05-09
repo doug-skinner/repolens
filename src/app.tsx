@@ -5,6 +5,7 @@ import { Header } from "./components/header.js";
 import { Dashboard } from "./components/dashboard.js";
 import { PrList } from "./components/pr-list.js";
 import { IssueList } from "./components/issue-list.js";
+import { IssueForm } from "./components/issue-form.js";
 import { MilestoneList } from "./components/milestone-list.js";
 import { RunList } from "./components/run-list.js";
 import { ReleaseList } from "./components/release-list.js";
@@ -36,6 +37,7 @@ export function App() {
   const [activeView, setActiveView] = useState<View>("dashboard");
   const [showHelp, setShowHelp] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
+  const [isCreatingIssue, setIsCreatingIssue] = useState(false);
 
   const refetchAll = useCallback(() => {
     refetchPrs();
@@ -49,7 +51,7 @@ export function App() {
   const { lastRefreshedAt, refreshNow } = useAutoRefresh({ refetch: refetchAll, paused: showHelp });
 
   useInput((input, key) => {
-    if (showHelp || isFiltering) return;
+    if (showHelp || isFiltering || isCreatingIssue) return;
 
     if (input === "?") {
       setShowHelp(true);
@@ -112,6 +114,18 @@ export function App() {
     }
 
     if (activeView === "issues") {
+      if (isCreatingIssue) {
+        return (
+          <IssueForm
+            milestones={milestones}
+            onClose={() => setIsCreatingIssue(false)}
+            onCreated={() => {
+              setIsCreatingIssue(false);
+              refetchIssues();
+            }}
+          />
+        );
+      }
       if (issuesLoading) {
         return (
           <Box gap={1} paddingX={1}>
@@ -130,7 +144,7 @@ export function App() {
       if (issues.length === 0) {
         return <EmptyState message="No open issues" />;
       }
-      return <IssueList issues={issues} username={username} onFilteringChange={setIsFiltering} />;
+      return <IssueList issues={issues} username={username} onFilteringChange={setIsFiltering} onCreateIssue={() => setIsCreatingIssue(true)} />;
     }
 
     if (activeView === "milestones") {
@@ -208,7 +222,7 @@ export function App() {
       <Box marginTop={1} flexDirection="column" flexGrow={1} overflow="hidden">
         {showHelp ? <HelpOverlay onClose={() => setShowHelp(false)} /> : renderView()}
       </Box>
-      {!showHelp && <Footer activeView={activeView} />}
+      {!showHelp && !isCreatingIssue && <Footer activeView={activeView} />}
     </Box>
   );
 }

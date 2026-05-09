@@ -77,6 +77,26 @@ export async function commentOnPr(number: number, body: string): Promise<void> {
   await $`gh pr comment ${number} --body ${body}`.quiet();
 }
 
+export async function fetchLabels(): Promise<string[]> {
+  const result = await $`gh label list --json name --limit 100`.quiet();
+  return (result.json() as { name: string }[]).map((l) => l.name).sort((a, b) => a.localeCompare(b));
+}
+
+export async function createIssue(opts: {
+  title: string;
+  body?: string;
+  labels?: string[];
+  milestone?: string;
+  assignee?: string;
+}): Promise<void> {
+  const args: string[] = ["--title", opts.title];
+  if (opts.body) args.push("--body", opts.body);
+  if (opts.labels?.length) args.push("--label", opts.labels.join(","));
+  if (opts.milestone) args.push("--milestone", opts.milestone);
+  if (opts.assignee) args.push("--assignee", opts.assignee);
+  await $`gh issue create ${args}`.quiet();
+}
+
 function parseVersion(title: string): [number, number, number] {
   const m = title.match(/v?(\d+)\.(\d+)\.(\d+)/);
   if (!m) return [Infinity, Infinity, Infinity];

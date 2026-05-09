@@ -32,6 +32,12 @@ const SECTIONS = [
     ],
   },
   {
+    title: "Issues",
+    bindings: [
+      ["c", "Create new issue"],
+    ],
+  },
+  {
     title: "Releases",
     bindings: [
       ["f", "Cycle type filter (All/Stable/Pre-release/Draft)"],

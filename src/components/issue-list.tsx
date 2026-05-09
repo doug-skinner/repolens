@@ -27,6 +27,7 @@ interface IssueListProps {
   issues: Issue[];
   username: string | null;
   onFilteringChange?: (editing: boolean) => void;
+  onCreateIssue?: () => void;
 }
 
 function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
@@ -61,7 +62,7 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
   );
 }
 
-export function IssueList({ issues, username, onFilteringChange }: IssueListProps) {
+export function IssueList({ issues, username, onFilteringChange, onCreateIssue }: IssueListProps) {
   const filter = useListFilter(onFilteringChange);
   const comment = useCommentInput(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
@@ -83,7 +84,11 @@ export function IssueList({ issues, username, onFilteringChange }: IssueListProp
     return items;
   }, [issues, filter.filterQuery, mine, username, sort.current]);
 
-  const extraKeys = useMemo(() => ({ s: sort.cycleSort, m: toggleMine }), [sort.cycleSort, toggleMine]);
+  const extraKeys = useMemo(() => {
+    const keys: Record<string, () => void> = { s: sort.cycleSort, m: toggleMine };
+    if (onCreateIssue) keys.c = onCreateIssue;
+    return keys;
+  }, [sort.cycleSort, toggleMine, onCreateIssue]);
 
   const onOpen = useCallback((i: number) => openIssueInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
