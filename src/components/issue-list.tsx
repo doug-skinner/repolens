@@ -5,7 +5,8 @@ import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
 import { CommentInput } from "./comment-input.js";
-import { openIssueInBrowser, commentOnIssue } from "../lib/gh.js";
+import { ConfirmBar } from "./confirm-bar.js";
+import { openIssueInBrowser, commentOnIssue, closeIssue } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
@@ -28,6 +29,8 @@ interface IssueListProps {
   username: string | null;
   onFilteringChange?: (editing: boolean) => void;
   onCreateIssue?: () => void;
+  onEditIssue?: (issue: Issue) => void;
+  onIssueChanged?: () => void;
 }
 
 function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
@@ -76,12 +79,15 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
   );
 }
 
-export function IssueList({ issues, username, onFilteringChange, onCreateIssue }: IssueListProps) {
+export function IssueList({ issues, username, onFilteringChange, onCreateIssue, onEditIssue, onIssueChanged }: IssueListProps) {
   const filter = useListFilter(onFilteringChange);
   const comment = useCommentInput(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
   const [mine, setMine] = useState(false);
   const commentTargetRef = useRef(0);
+  const selectedIndexRef = useRef(0);
+  const [confirmClose, setConfirmClose] = useState<{ number: number; title: string } | null>(null);
+  const [confirmStatus, setConfirmStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
 
   const toggleMine = useCallback(() => setMine((v) => !v), []);
 
@@ -98,11 +104,49 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue }
     return items;
   }, [issues, filter.filterQuery, mine, username, sort.current]);
 
+  const startClose = useCallback((i: number) => {
+    const issue = sorted[i];
+    if (!issue) return;
+    setConfirmClose({ number: issue.number, title: issue.title });
+    setConfirmStatus("confirming");
+    onFilteringChange?.(true);
+  }, [sorted, onFilteringChange]);
+
+  const handleConfirm = useCallback(async () => {
+    if (!confirmClose) return;
+    setConfirmStatus("working");
+    try {
+      await closeIssue(confirmClose.number);
+      setConfirmStatus("success");
+      onIssueChanged?.();
+      setTimeout(() => {
+        setConfirmClose(null);
+        setConfirmStatus("confirming");
+        onFilteringChange?.(false);
+      }, 1500);
+    } catch {
+      setConfirmStatus("error");
+      setTimeout(() => {
+        setConfirmClose(null);
+        setConfirmStatus("confirming");
+        onFilteringChange?.(false);
+      }, 2000);
+    }
+  }, [confirmClose, onIssueChanged, onFilteringChange]);
+
+  const handleCancelClose = useCallback(() => {
+    setConfirmClose(null);
+    setConfirmStatus("confirming");
+    onFilteringChange?.(false);
+  }, [onFilteringChange]);
+
   const extraKeys = useMemo(() => {
     const keys: Record<string, () => void> = { s: sort.cycleSort, m: toggleMine };
     if (onCreateIssue) keys.c = onCreateIssue;
+    if (onEditIssue) keys.e = () => { const issue = sorted[selectedIndexRef.current]; if (issue) onEditIssue(issue); };
+    keys.x = () => startClose(selectedIndexRef.current);
     return keys;
-  }, [sort.cycleSort, toggleMine, onCreateIssue]);
+  }, [sort.cycleSort, toggleMine, onCreateIssue, onEditIssue, sorted, startClose]);
 
   const onOpen = useCallback((i: number) => openIssueInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
@@ -120,7 +164,8 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue }
     }
   }, [comment.resolveSubmit, comment.rejectSubmit]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}` });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirmClose });
+  selectedIndexRef.current = selectedIndex;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -134,6 +179,14 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue }
       <Breadcrumb view={viewLabel} detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={issues.length} />
       <CommentInput targetLabel={comment.targetLabel} text={comment.commentText} isEditing={comment.isEditing} status={comment.status} />
+      {confirmClose && (
+        <ConfirmBar
+          message={confirmStatus === "success" ? `Closed #${confirmClose.number}` : confirmStatus === "error" ? `Failed to close #${confirmClose.number}` : `Close #${confirmClose.number} "${confirmClose.title}"?`}
+          status={confirmStatus}
+          onConfirm={handleConfirm}
+          onCancel={handleCancelClose}
+        />
+      )}
       <Box flexDirection="column">
         {visible.map((issue, i) => (
           <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} stale={isStale(issue.createdAt, STALE_DAYS)} />

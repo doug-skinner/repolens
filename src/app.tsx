@@ -38,6 +38,7 @@ export function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isCreatingIssue, setIsCreatingIssue] = useState(false);
+  const [editingIssue, setEditingIssue] = useState<import("./lib/types.js").Issue | null>(null);
 
   const refetchAll = useCallback(() => {
     refetchPrs();
@@ -51,7 +52,7 @@ export function App() {
   const { lastRefreshedAt, refreshNow } = useAutoRefresh({ refetch: refetchAll, paused: showHelp });
 
   useInput((input, key) => {
-    if (showHelp || isFiltering || isCreatingIssue) return;
+    if (showHelp || isFiltering || isCreatingIssue || editingIssue) return;
 
     if (input === "?") {
       setShowHelp(true);
@@ -126,6 +127,19 @@ export function App() {
           />
         );
       }
+      if (editingIssue) {
+        return (
+          <IssueForm
+            milestones={milestones}
+            issue={editingIssue}
+            onClose={() => setEditingIssue(null)}
+            onCreated={() => {
+              setEditingIssue(null);
+              refetchIssues();
+            }}
+          />
+        );
+      }
       if (issuesLoading) {
         return (
           <Box gap={1} paddingX={1}>
@@ -144,7 +158,7 @@ export function App() {
       if (issues.length === 0) {
         return <EmptyState message="No open issues" />;
       }
-      return <IssueList issues={issues} username={username} onFilteringChange={setIsFiltering} onCreateIssue={() => setIsCreatingIssue(true)} />;
+      return <IssueList issues={issues} username={username} onFilteringChange={setIsFiltering} onCreateIssue={() => setIsCreatingIssue(true)} onEditIssue={setEditingIssue} onIssueChanged={refetchIssues} />;
     }
 
     if (activeView === "milestones") {
@@ -222,7 +236,7 @@ export function App() {
       <Box marginTop={1} flexDirection="column" flexGrow={1} overflow="hidden">
         {showHelp ? <HelpOverlay onClose={() => setShowHelp(false)} /> : renderView()}
       </Box>
-      {!showHelp && !isCreatingIssue && <Footer activeView={activeView} />}
+      {!showHelp && !isCreatingIssue && !editingIssue && <Footer activeView={activeView} />}
     </Box>
   );
 }

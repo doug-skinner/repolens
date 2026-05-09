@@ -98,6 +98,32 @@ export async function createIssue(opts: {
   await $`gh issue create ${args}`.quiet();
 }
 
+export async function editIssue(number: number, opts: {
+  title: string;
+  body: string;
+  addLabels: string[];
+  removeLabels: string[];
+  milestone: string;
+  addAssignees: string[];
+  removeAssignees: string[];
+}): Promise<void> {
+  const args: string[] = ["--title", opts.title, "--body", opts.body];
+  if (opts.addLabels.length) args.push("--add-label", opts.addLabels.join(","));
+  if (opts.removeLabels.length) args.push("--remove-label", opts.removeLabels.join(","));
+  args.push("--milestone", opts.milestone);
+  if (opts.addAssignees.length) args.push("--add-assignee", opts.addAssignees.join(","));
+  if (opts.removeAssignees.length) args.push("--remove-assignee", opts.removeAssignees.join(","));
+  await $`gh issue edit ${number} ${args}`.quiet();
+}
+
+export async function closeIssue(number: number): Promise<void> {
+  await $`gh issue close ${number}`.quiet();
+}
+
+export async function reopenIssue(number: number): Promise<void> {
+  await $`gh issue reopen ${number}`.quiet();
+}
+
 function parseVersion(title: string): [number, number, number] {
   const m = title.match(/v?(\d+)\.(\d+)\.(\d+)/);
   if (!m) return [Infinity, Infinity, Infinity];

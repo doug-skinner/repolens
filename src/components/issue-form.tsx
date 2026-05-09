@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
-import { fetchLabels, createIssue } from "../lib/gh.js";
-import type { Milestone } from "../lib/types.js";
+import { fetchLabels, createIssue, editIssue } from "../lib/gh.js";
+import type { Issue, Milestone } from "../lib/types.js";
 
 const FIELDS = ["title", "body", "labels", "milestone", "assignee"] as const;
 type FieldName = (typeof FIELDS)[number];
@@ -18,17 +18,23 @@ function computeWindow(total: number, cursor: number) {
 
 interface IssueFormProps {
   milestones: Milestone[];
+  issue?: Issue;
   onClose: () => void;
   onCreated: () => void;
 }
 
-export function IssueForm({ milestones, onClose, onCreated }: IssueFormProps) {
+export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormProps) {
+  const isEdit = !!issue;
   const [focusedIndex, setFocusedIndex] = useState(0);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
-  const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
-  const [assignee, setAssignee] = useState("");
+  const [title, setTitle] = useState(issue?.title ?? "");
+  const [body, setBody] = useState(issue?.body ?? "");
+  const [selectedLabels, setSelectedLabels] = useState<Set<string>>(
+    new Set(issue?.labels.map((l) => l.name) ?? []),
+  );
+  const [selectedMilestone, setSelectedMilestone] = useState<string | null>(
+    issue?.milestone?.title ?? null,
+  );
+  const [assignee, setAssignee] = useState(issue?.assignees[0]?.login ?? "");
   const [repoLabels, setRepoLabels] = useState<string[]>([]);
   const [labelsLoading, setLabelsLoading] = useState(true);
   const [labelsCursor, setLabelsCursor] = useState(0);
@@ -52,20 +58,39 @@ export function IssueForm({ milestones, onClose, onCreated }: IssueFormProps) {
   const submit = useCallback(async () => {
     setStatus("submitting");
     try {
-      await createIssue({
-        title: title.trim(),
-        body: body.trim() || undefined,
-        labels: selectedLabels.size > 0 ? [...selectedLabels] : undefined,
-        milestone: selectedMilestone ?? undefined,
-        assignee: assignee.trim() || undefined,
-      });
+      if (isEdit) {
+        const origLabels = new Set(issue!.labels.map((l) => l.name));
+        const addLabels = [...selectedLabels].filter((l) => !origLabels.has(l));
+        const removeLabels = [...origLabels].filter((l) => !selectedLabels.has(l));
+        const origAssignees = issue!.assignees.map((a) => a.login);
+        const newAssignee = assignee.trim();
+        const addAssignees = newAssignee && !origAssignees.includes(newAssignee) ? [newAssignee] : [];
+        const removeAssignees = origAssignees.filter((a) => a !== newAssignee);
+        await editIssue(issue!.number, {
+          title: title.trim(),
+          body: body.trim(),
+          addLabels,
+          removeLabels,
+          milestone: selectedMilestone ?? "",
+          addAssignees,
+          removeAssignees,
+        });
+      } else {
+        await createIssue({
+          title: title.trim(),
+          body: body.trim() || undefined,
+          labels: selectedLabels.size > 0 ? [...selectedLabels] : undefined,
+          milestone: selectedMilestone ?? undefined,
+          assignee: assignee.trim() || undefined,
+        });
+      }
       onCreated();
     } catch (err) {
       setStatus("error");
-      setErrorMessage(err instanceof Error ? err.message : "Failed to create issue");
+      setErrorMessage(err instanceof Error ? err.message : `Failed to ${isEdit ? "update" : "create"} issue`);
       setTimeout(() => setStatus("editing"), 3000);
     }
-  }, [title, body, selectedLabels, selectedMilestone, assignee, onCreated]);
+  }, [isEdit, issue, title, body, selectedLabels, selectedMilestone, assignee, onCreated]);
 
   useInput((input, key) => {
     if (status !== "editing") return;
@@ -135,13 +160,15 @@ export function IssueForm({ milestones, onClose, onCreated }: IssueFormProps) {
     }
   });
 
+  const formTitle = isEdit ? `Edit Issue #${issue!.number}` : "New Issue";
+
   if (status === "submitting") {
     return (
       <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
-        <Text bold color="cyan">New Issue</Text>
+        <Text bold color="cyan">{formTitle}</Text>
         <Box gap={1} marginTop={1}>
           <Spinner type="dots" />
-          <Text>Creating issue…</Text>
+          <Text>{isEdit ? "Updating" : "Creating"} issue…</Text>
         </Box>
       </Box>
     );
@@ -155,7 +182,7 @@ export function IssueForm({ milestones, onClose, onCreated }: IssueFormProps) {
 
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
-      <Text bold color="cyan">New Issue</Text>
+      <Text bold color="cyan">{formTitle}</Text>
 
       <TextField label="Title:" focused={focusedIndex === 0} value={title} required />
       <TextField label="Body:" focused={focusedIndex === 1} value={body} />

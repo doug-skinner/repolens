@@ -17,6 +17,7 @@ interface ListNavigationOptions {
   comment?: CommentState;
   extraKeys?: Record<string, () => void>;
   resetTrigger?: string | number;
+  inputBlocked?: boolean;
 }
 
 export function useListNavigation(length: number, options: ListNavigationOptions) {
@@ -48,6 +49,8 @@ export function useListNavigation(length: number, options: ListNavigationOptions
   }, []);
 
   useInput((input, key) => {
+    if (options.inputBlocked) return;
+
     if (comment?.isEditing) {
       if (key.escape) {
         comment.cancel();

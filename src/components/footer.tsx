@@ -7,7 +7,7 @@ interface FooterProps {
 
 const DASHBOARD_HINTS = ["tab switch view", "1-6 jump", "r refresh", "? help"];
 const LIST_HINTS = ["/ filter", "s sort", "m mine", "d detail", "o open", "? help"];
-const ISSUE_HINTS = ["/ filter", "s sort", "m mine", "c create", "C comment", "d detail", "o open", "? help"];
+const ISSUE_HINTS = ["/ filter", "s sort", "m mine", "c create", "e edit", "x close", "C comment", "d detail", "o open", "? help"];
 const PR_HINTS = ["/ filter", "s sort", "m mine", "C comment", "d detail", "o open", "? help"];
 const RELEASE_HINTS = ["/ filter", "s sort", "m mine", "f type", "d detail", "o open", "? help"];
 

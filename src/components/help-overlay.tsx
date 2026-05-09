@@ -35,6 +35,8 @@ const SECTIONS = [
     title: "Issues",
     bindings: [
       ["c", "Create new issue"],
+      ["e", "Edit selected issue"],
+      ["x", "Close selected issue"],
     ],
   },
   {
