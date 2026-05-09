@@ -39,6 +39,12 @@ export interface RepoInfo {
   branch: string;
 }
 
+export interface Comment {
+  author: { login: string };
+  body: string;
+  createdAt: string;
+}
+
 export interface Issue {
   number: number;
   title: string;
@@ -47,6 +53,7 @@ export interface Issue {
   assignees: { login: string }[];
   milestone: { title: string } | null;
   labels: Label[];
+  comments: Comment[];
   createdAt: string;
   url: string;
 }

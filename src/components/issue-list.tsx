@@ -11,7 +11,7 @@ import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
 import { useCommentInput } from "../hooks/use-comment-input.js";
-import { isStale } from "../lib/format.js";
+import { isStale, timeAgo } from "../lib/format.js";
 import { STALE_DAYS } from "../lib/config.js";
 import { matchesFilter } from "../lib/filter.js";
 import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
@@ -52,11 +52,25 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
         </Box>
       )}
       {issue.body ? (
-        <Box flexDirection="column" marginTop={1} flexGrow={1} overflow="hidden">
+        <Box flexDirection="column" marginTop={1} overflow="hidden">
           <Text>{issue.body}</Text>
         </Box>
       ) : (
         <Text dimColor>No description</Text>
+      )}
+      {issue.comments.length > 0 && (
+        <Box flexDirection="column" marginTop={1} flexGrow={1} overflow="hidden">
+          <Text bold dimColor>Comments ({issue.comments.length})</Text>
+          {issue.comments.map((c, i) => (
+            <Box key={i} flexDirection="column" marginTop={i === 0 ? 0 : 1}>
+              <Text>
+                <Text color="cyan">{c.author.login}</Text>
+                <Text dimColor> · {timeAgo(c.createdAt)}</Text>
+              </Text>
+              <Text>{c.body}</Text>
+            </Box>
+          ))}
+        </Box>
       )}
     </DetailPane>
   );

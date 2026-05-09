@@ -55,6 +55,7 @@ const ISSUE_FIELDS = [
   "assignees",
   "milestone",
   "labels",
+  "comments",
   "createdAt",
   "url",
 ].join(",");
