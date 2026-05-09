@@ -69,6 +69,14 @@ export async function openIssueInBrowser(number: number): Promise<void> {
   await $`gh issue view ${number} --web`.quiet();
 }
 
+export async function commentOnIssue(number: number, body: string): Promise<void> {
+  await $`gh issue comment ${number} --body ${body}`.quiet();
+}
+
+export async function commentOnPr(number: number, body: string): Promise<void> {
+  await $`gh pr comment ${number} --body ${body}`.quiet();
+}
+
 function parseVersion(title: string): [number, number, number] {
   const m = title.match(/v?(\d+)\.(\d+)\.(\d+)/);
   if (!m) return [Infinity, Infinity, Infinity];

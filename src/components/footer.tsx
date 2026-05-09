@@ -7,6 +7,7 @@ interface FooterProps {
 
 const DASHBOARD_HINTS = ["tab switch view", "1-6 jump", "r refresh", "? help"];
 const LIST_HINTS = ["/ filter", "s sort", "m mine", "d detail", "o open", "? help"];
+const COMMENTABLE_LIST_HINTS = ["/ filter", "s sort", "m mine", "C comment", "d detail", "o open", "? help"];
 const RELEASE_HINTS = ["/ filter", "s sort", "m mine", "f type", "d detail", "o open", "? help"];
 
 export function Footer({ activeView }: FooterProps) {
@@ -14,7 +15,9 @@ export function Footer({ activeView }: FooterProps) {
     ? DASHBOARD_HINTS
     : activeView === "releases"
       ? RELEASE_HINTS
-      : LIST_HINTS;
+      : activeView === "issues" || activeView === "prs"
+        ? COMMENTABLE_LIST_HINTS
+        : LIST_HINTS;
 
   return (
     <Box paddingX={1}>

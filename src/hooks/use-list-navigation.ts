@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useInput, useStdout } from "ink";
 import type { ListFilter } from "./use-list-filter.js";
+import type { CommentState } from "./use-comment-input.js";
 
 const GG_TIMEOUT_MS = 500;
 const LAYOUT_OVERHEAD = 7; // header (4) + breadcrumb (1) + margin (1) + footer (1)
@@ -10,16 +11,20 @@ interface ListNavigationOptions {
   onOpen: (index: number) => void;
   onYank?: (index: number) => void;
   onYankRef?: (index: number) => void;
+  onStartComment?: (index: number) => void;
+  onCommentSubmit?: (text: string) => void;
   filter?: ListFilter;
+  comment?: CommentState;
   extraKeys?: Record<string, () => void>;
   resetTrigger?: string | number;
 }
 
 export function useListNavigation(length: number, options: ListNavigationOptions) {
-  const { onOpen, onYank, onYankRef, filter, extraKeys } = options;
+  const { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys } = options;
   const { stdout } = useStdout();
   const filterBarVisible = filter ? (filter.isEditing || !!filter.filterQuery) : false;
-  const totalAvailable = Math.max(1, (stdout?.rows ?? 24) - LAYOUT_OVERHEAD - (filterBarVisible ? 1 : 0));
+  const commentBarVisible = comment ? (comment.isEditing || comment.status !== "idle") : false;
+  const totalAvailable = Math.max(1, (stdout?.rows ?? 24) - LAYOUT_OVERHEAD - (filterBarVisible ? 1 : 0) - (commentBarVisible ? 1 : 0));
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showDetail, setShowDetail] = useState(false);
@@ -43,6 +48,29 @@ export function useListNavigation(length: number, options: ListNavigationOptions
   }, []);
 
   useInput((input, key) => {
+    if (comment?.isEditing) {
+      if (key.escape) {
+        comment.cancel();
+        return;
+      }
+      if (key.return) {
+        const text = comment.commentText.trim();
+        if (text) {
+          comment.beginSubmit();
+          onCommentSubmit?.(text);
+        }
+        return;
+      }
+      if (key.backspace || key.delete) {
+        comment.backspace();
+        return;
+      }
+      if (input && !key.ctrl && !key.meta) {
+        comment.appendChar(input);
+      }
+      return;
+    }
+
     if (filter?.isEditing) {
       if (key.escape) {
         filter.clearFilter();
@@ -77,6 +105,12 @@ export function useListNavigation(length: number, options: ListNavigationOptions
     if (extraKeys?.[input]) {
       clearPendingG();
       extraKeys[input]();
+      return;
+    }
+
+    if (input === "C" && onStartComment) {
+      clearPendingG();
+      onStartComment(selectedIndex);
       return;
     }
 

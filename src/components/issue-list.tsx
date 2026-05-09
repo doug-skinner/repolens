@@ -1,14 +1,16 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { Box, Text } from "ink";
 import { IssueRow } from "./issue-row.js";
 import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
-import { openIssueInBrowser } from "../lib/gh.js";
+import { CommentInput } from "./comment-input.js";
+import { openIssueInBrowser, commentOnIssue } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
+import { useCommentInput } from "../hooks/use-comment-input.js";
 import { isStale } from "../lib/format.js";
 import { STALE_DAYS } from "../lib/config.js";
 import { matchesFilter } from "../lib/filter.js";
@@ -61,8 +63,10 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
 
 export function IssueList({ issues, username, onFilteringChange }: IssueListProps) {
   const filter = useListFilter(onFilteringChange);
+  const comment = useCommentInput(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
   const [mine, setMine] = useState(false);
+  const commentTargetRef = useRef(0);
 
   const toggleMine = useCallback(() => setMine((v) => !v), []);
 
@@ -84,8 +88,20 @@ export function IssueList({ issues, username, onFilteringChange }: IssueListProp
   const onOpen = useCallback((i: number) => openIssueInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
   const onYankRef = useCallback((i: number) => copyToClipboard(`#${sorted[i].number}`), [sorted]);
+  const onStartComment = useCallback((i: number) => {
+    commentTargetRef.current = sorted[i].number;
+    comment.startEditing(`#${sorted[i].number}`);
+  }, [sorted, comment.startEditing]);
+  const onCommentSubmit = useCallback(async (text: string) => {
+    try {
+      await commentOnIssue(commentTargetRef.current, text);
+      comment.resolveSubmit();
+    } catch {
+      comment.rejectSubmit();
+    }
+  }, [comment.resolveSubmit, comment.rejectSubmit]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: `${mine}:${sort.current}` });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}` });
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -98,6 +114,7 @@ export function IssueList({ issues, username, onFilteringChange }: IssueListProp
     <Box flexDirection="column">
       <Breadcrumb view={viewLabel} detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={issues.length} />
+      <CommentInput targetLabel={comment.targetLabel} text={comment.commentText} isEditing={comment.isEditing} status={comment.status} />
       <Box flexDirection="column">
         {visible.map((issue, i) => (
           <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} stale={isStale(issue.createdAt, STALE_DAYS)} />
