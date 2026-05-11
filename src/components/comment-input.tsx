@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
+import { useTheme } from "../lib/config-context.js";
 
 interface CommentInputProps {
   targetLabel: string;
@@ -9,6 +10,8 @@ interface CommentInputProps {
 }
 
 export function CommentInput({ targetLabel, text, isEditing, status }: CommentInputProps) {
+  const theme = useTheme();
+
   if (!isEditing && status === "idle") return null;
 
   if (status === "submitting") {
@@ -23,7 +26,7 @@ export function CommentInput({ targetLabel, text, isEditing, status }: CommentIn
   if (status === "success") {
     return (
       <Box paddingX={1} gap={1}>
-        <Text color="green">✓</Text>
+        <Text color={theme.success}>✓</Text>
         <Text>Comment posted on {targetLabel}</Text>
       </Box>
     );
@@ -32,7 +35,7 @@ export function CommentInput({ targetLabel, text, isEditing, status }: CommentIn
   if (status === "error") {
     return (
       <Box paddingX={1} gap={1}>
-        <Text color="red">✗</Text>
+        <Text color={theme.error}>✗</Text>
         <Text>Failed to post comment</Text>
       </Box>
     );
@@ -40,9 +43,9 @@ export function CommentInput({ targetLabel, text, isEditing, status }: CommentIn
 
   return (
     <Box paddingX={1} gap={1}>
-      <Text color="cyan">{targetLabel}:</Text>
+      <Text color={theme.accent}>{targetLabel}:</Text>
       <Text>{text}</Text>
-      <Text color="cyan">▏</Text>
+      <Text color={theme.accent}>▏</Text>
     </Box>
   );
 }

@@ -1,6 +1,8 @@
 import { render } from "ink";
 import { App } from "./app.js";
 import { checkGhAuth } from "./lib/gh.js";
+import { loadConfig } from "./lib/config.js";
+import { ConfigProvider } from "./lib/config-context.js";
 
 const authed = await checkGhAuth();
 if (!authed) {
@@ -10,4 +12,10 @@ if (!authed) {
   process.exit(1);
 }
 
-render(<App />);
+const config = loadConfig();
+
+render(
+  <ConfigProvider config={config}>
+    <App />
+  </ConfigProvider>
+);

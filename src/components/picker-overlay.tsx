@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
+import { useTheme } from "../lib/config-context.js";
 
 const VIEWPORT_SIZE = 8;
 
@@ -23,6 +24,7 @@ interface PickerOverlayProps {
 }
 
 export function PickerOverlay({ title, options, selected: initial, loading, onConfirm, onCancel }: PickerOverlayProps) {
+  const theme = useTheme();
   const [cursor, setCursor] = useState(0);
   const [selected, setSelected] = useState(() => new Set(initial));
   const [status, setStatus] = useState<PickerStatus>("picking");
@@ -85,8 +87,8 @@ export function PickerOverlay({ title, options, selected: initial, loading, onCo
   const window = computeWindow(options.length, cursor);
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-      <Text bold color="cyan">{title}</Text>
+    <Box flexDirection="column" borderStyle="round" borderColor={theme.accent} paddingX={1}>
+      <Text bold color={theme.accent}>{title}</Text>
       {window.start > 0 && <Text dimColor>  ↑ more</Text>}
       {options.slice(window.start, window.end).map((option, i) => {
         const idx = window.start + i;
@@ -94,7 +96,7 @@ export function PickerOverlay({ title, options, selected: initial, loading, onCo
         const isSelected = selected.has(option);
         return (
           <Box key={option} gap={1}>
-            <Text color={isCursor ? "cyan" : undefined} bold={isCursor}>
+            <Text color={isCursor ? theme.accent : undefined} bold={isCursor}>
               {isSelected ? "✓" : "○"} {option}
             </Text>
           </Box>

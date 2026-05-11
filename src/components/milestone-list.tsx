@@ -9,6 +9,7 @@ import { ConfirmBar } from "./confirm-bar.js";
 import { openMilestoneInBrowser, fetchMilestoneIssues, openIssueInBrowser, setIssueMilestone } from "../lib/gh.js";
 import type { MilestoneIssue } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
+import { useConfig, useTheme } from "../lib/config-context.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
@@ -42,6 +43,7 @@ function MilestoneDetail({
   onExit: () => void;
   onUnlinked: () => void;
 }) {
+  const theme = useTheme();
   const [issues, setIssues] = useState<MilestoneIssue[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [cursor, setCursor] = useState(0);
@@ -174,11 +176,11 @@ function MilestoneDetail({
             return (
               <Box key={issue.number} gap={1}>
                 {focused && (
-                  <Text color={isSelected ? "cyan" : undefined}>
+                  <Text color={isSelected ? theme.accent : undefined}>
                     {isSelected ? "▸" : " "}
                   </Text>
                 )}
-                <Text color={issue.state === "OPEN" ? "green" : "magenta"}>
+                <Text color={issue.state === "OPEN" ? theme.success : theme.info}>
                   {issue.state === "OPEN" ? "○" : "●"}
                 </Text>
                 <Text dimColor>#{issue.number}</Text>
@@ -197,7 +199,7 @@ function MilestoneDetail({
               {selectedIssue.labels.length > 0 && (
                 <Box gap={1}>
                   <Text dimColor>Labels:</Text>
-                  <Text color="yellow">{selectedIssue.labels.map((l) => l.name).join(", ")}</Text>
+                  <Text color={theme.warning}>{selectedIssue.labels.map((l) => l.name).join(", ")}</Text>
                 </Box>
               )}
               {selectedIssue.body ? (
@@ -225,8 +227,9 @@ function MilestoneDetail({
 }
 
 export function MilestoneList({ milestones, onFilteringChange, onMilestoneChanged }: MilestoneListProps) {
+  const { milestoneSort } = useConfig();
   const filter = useListFilter(onFilteringChange);
-  const sort = useListSort(SORT_OPTIONS);
+  const sort = useListSort(SORT_OPTIONS, milestoneSort);
   const [detailFocused, setDetailFocused] = useState(false);
   const showDetailRef = useRef(false);
 

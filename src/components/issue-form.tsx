@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { fetchLabels, createIssue, editIssue } from "../lib/gh.js";
+import { useTheme } from "../lib/config-context.js";
 import type { Issue, Milestone } from "../lib/types.js";
 
 const FIELDS = ["title", "body", "labels", "milestone", "assignee"] as const;
@@ -24,6 +25,7 @@ interface IssueFormProps {
 }
 
 export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormProps) {
+  const theme = useTheme();
   const isEdit = !!issue;
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [title, setTitle] = useState(issue?.title ?? "");
@@ -164,8 +166,8 @@ export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormPr
 
   if (status === "submitting") {
     return (
-      <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
-        <Text bold color="cyan">{formTitle}</Text>
+      <Box flexDirection="column" borderStyle="round" borderColor={theme.accent} paddingX={2} paddingY={1}>
+        <Text bold color={theme.accent}>{formTitle}</Text>
         <Box gap={1} marginTop={1}>
           <Spinner type="dots" />
           <Text>{isEdit ? "Updating" : "Creating"} issue…</Text>
@@ -181,20 +183,20 @@ export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormPr
   const milestoneWindow = computeWindow(milestoneNames.length, milestoneCursor);
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
-      <Text bold color="cyan">{formTitle}</Text>
+    <Box flexDirection="column" borderStyle="round" borderColor={theme.accent} paddingX={2} paddingY={1}>
+      <Text bold color={theme.accent}>{formTitle}</Text>
 
-      <TextField label="Title:" focused={focusedIndex === 0} value={title} required />
-      <TextField label="Body:" focused={focusedIndex === 1} value={body} />
+      <TextField label="Title:" focused={focusedIndex === 0} value={title} required accentColor={theme.accent} />
+      <TextField label="Body:" focused={focusedIndex === 1} value={body} accentColor={theme.accent} />
 
       {/* Labels */}
       <Box flexDirection="column" marginTop={focusedIndex === 2 ? 0 : 0}>
         <Box gap={1}>
-          <Text color={focusedIndex === 2 ? "cyan" : undefined} dimColor={focusedIndex !== 2}>
+          <Text color={focusedIndex === 2 ? theme.accent : undefined} dimColor={focusedIndex !== 2}>
             {labelFieldLabel}
           </Text>
           {focusedIndex !== 2 && selectedLabels.size > 0 && (
-            <Text color="yellow">{[...selectedLabels].join(", ")}</Text>
+            <Text color={theme.warning}>{[...selectedLabels].join(", ")}</Text>
           )}
           {focusedIndex !== 2 && selectedLabels.size === 0 && <Text dimColor>none</Text>}
         </Box>
@@ -221,7 +223,7 @@ export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormPr
                 const isSelected = selectedLabels.has(label);
                 return (
                   <Box key={label} paddingLeft={2} gap={1}>
-                    <Text color={isCursor ? "cyan" : undefined} bold={isCursor}>
+                    <Text color={isCursor ? theme.accent : undefined} bold={isCursor}>
                       {isSelected ? "✓" : "○"} {label}
                     </Text>
                   </Box>
@@ -239,10 +241,10 @@ export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormPr
       {/* Milestone */}
       <Box flexDirection="column">
         <Box gap={1}>
-          <Text color={focusedIndex === 3 ? "cyan" : undefined} dimColor={focusedIndex !== 3}>
+          <Text color={focusedIndex === 3 ? theme.accent : undefined} dimColor={focusedIndex !== 3}>
             {milestoneFieldLabel}
           </Text>
-          {focusedIndex !== 3 && selectedMilestone && <Text color="cyan">{selectedMilestone}</Text>}
+          {focusedIndex !== 3 && selectedMilestone && <Text color={theme.accent}>{selectedMilestone}</Text>}
           {focusedIndex !== 3 && !selectedMilestone && <Text dimColor>none</Text>}
         </Box>
         {focusedIndex === 3 &&
@@ -263,7 +265,7 @@ export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormPr
                 const isSelected = selectedMilestone === ms;
                 return (
                   <Box key={ms} paddingLeft={2} gap={1}>
-                    <Text color={isCursor ? "cyan" : undefined} bold={isCursor}>
+                    <Text color={isCursor ? theme.accent : undefined} bold={isCursor}>
                       {isSelected ? "●" : "○"} {ms}
                     </Text>
                   </Box>
@@ -278,11 +280,11 @@ export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormPr
           ))}
       </Box>
 
-      <TextField label="Assignee:" focused={focusedIndex === 4} value={assignee} />
+      <TextField label="Assignee:" focused={focusedIndex === 4} value={assignee} accentColor={theme.accent} />
 
       {status === "error" && (
         <Box marginTop={1}>
-          <Text color="red">✗ {errorMessage}</Text>
+          <Text color={theme.error}>✗ {errorMessage}</Text>
         </Box>
       )}
 
@@ -302,19 +304,21 @@ function TextField({
   focused,
   value,
   required,
+  accentColor,
 }: {
   label: string;
   focused: boolean;
   value: string;
   required?: boolean;
+  accentColor: string;
 }) {
   return (
     <Box gap={1}>
-      <Text color={focused ? "cyan" : undefined} dimColor={!focused}>
+      <Text color={focused ? accentColor : undefined} dimColor={!focused}>
         {label.padEnd(11)}
       </Text>
       {value ? <Text>{value}</Text> : !focused && <Text dimColor>{required ? "(required)" : "none"}</Text>}
-      {focused && <Text color="cyan">▏</Text>}
+      {focused && <Text color={accentColor}>▏</Text>}
     </Box>
   );
 }

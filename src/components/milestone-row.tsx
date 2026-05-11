@@ -1,5 +1,8 @@
 import { Box, Text } from "ink";
 import { truncate } from "../lib/format.js";
+import { useConfig, useTheme } from "../lib/config-context.js";
+import { Columns, type ColumnDef } from "../lib/columns.js";
+import type { MilestoneColumn } from "../lib/config.js";
 import type { Milestone } from "../lib/types.js";
 
 interface MilestoneRowProps {
@@ -25,28 +28,22 @@ function progressBar(open: number, closed: number): string {
 }
 
 export function MilestoneRow({ milestone, selected }: MilestoneRowProps) {
+  const { columns } = useConfig();
+  const theme = useTheme();
   const total = milestone.open_issues + milestone.closed_issues;
   const pct = total > 0 ? Math.round((milestone.closed_issues / total) * 100) : 0;
 
+  const defs: ColumnDef<MilestoneColumn>[] = [
+    { key: "title", flexGrow: 1, render: () => <Text bold={selected} wrap="truncate">{truncate(milestone.title, 28)}</Text> },
+    { key: "due", width: 14, render: () => <Text dimColor>{formatDue(milestone.due_on)}</Text> },
+    { key: "progress", width: 20, render: () => <Text color={pct === 100 ? theme.success : theme.warning}>{progressBar(milestone.open_issues, milestone.closed_issues)}</Text> },
+    { key: "percent", width: 6, render: () => <Text dimColor>{pct}%</Text> },
+  ];
+
   return (
     <Box gap={1}>
-      <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
-      <Box width={30}>
-        <Text bold={selected} wrap="truncate">
-          {truncate(milestone.title, 28)}
-        </Text>
-      </Box>
-      <Box width={14}>
-        <Text dimColor>{formatDue(milestone.due_on)}</Text>
-      </Box>
-      <Box width={20}>
-        <Text color={pct === 100 ? "green" : "yellow"}>
-          {progressBar(milestone.open_issues, milestone.closed_issues)}
-        </Text>
-      </Box>
-      <Box width={6}>
-        <Text dimColor>{pct}%</Text>
-      </Box>
+      <Text color={selected ? theme.accent : undefined}>{selected ? "▸" : " "}</Text>
+      <Columns definitions={defs} visible={columns.milestones} />
     </Box>
   );
 }

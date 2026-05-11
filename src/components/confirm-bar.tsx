@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
+import { useTheme } from "../lib/config-context.js";
 
 interface ConfirmBarProps {
   message: string;
@@ -9,6 +10,8 @@ interface ConfirmBarProps {
 }
 
 export function ConfirmBar({ message, status, onConfirm, onCancel }: ConfirmBarProps) {
+  const theme = useTheme();
+
   useInput((input, key) => {
     if (status !== "confirming") return;
     if (input === "y") onConfirm();
@@ -27,7 +30,7 @@ export function ConfirmBar({ message, status, onConfirm, onCancel }: ConfirmBarP
   if (status === "success") {
     return (
       <Box paddingX={1} gap={1}>
-        <Text color="green">✓</Text>
+        <Text color={theme.success}>✓</Text>
         <Text>{message}</Text>
       </Box>
     );
@@ -36,7 +39,7 @@ export function ConfirmBar({ message, status, onConfirm, onCancel }: ConfirmBarP
   if (status === "error") {
     return (
       <Box paddingX={1} gap={1}>
-        <Text color="red">✗</Text>
+        <Text color={theme.error}>✗</Text>
         <Text>{message}</Text>
       </Box>
     );
@@ -44,7 +47,7 @@ export function ConfirmBar({ message, status, onConfirm, onCancel }: ConfirmBarP
 
   return (
     <Box paddingX={1} gap={1}>
-      <Text color="yellow">{message}</Text>
+      <Text color={theme.warning}>{message}</Text>
       <Text dimColor>y to confirm · Esc to cancel</Text>
     </Box>
   );

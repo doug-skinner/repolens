@@ -15,7 +15,7 @@ import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
 import { useCommentInput } from "../hooks/use-comment-input.js";
 import { truncate, isStale } from "../lib/format.js";
-import { STALE_DAYS } from "../lib/config.js";
+import { useConfig, useTheme } from "../lib/config-context.js";
 import { matchesFilter } from "../lib/filter.js";
 import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
 import type { PullRequest } from "../lib/types.js";
@@ -33,26 +33,28 @@ interface PrListProps {
   onPrChanged?: () => void;
 }
 
-function checkSymbol(status: string, conclusion: string): { symbol: string; color: string } {
-  if (status === "IN_PROGRESS") return { symbol: "●", color: "yellow" };
-  if (conclusion === "SUCCESS") return { symbol: "✓", color: "green" };
-  if (conclusion === "FAILURE") return { symbol: "✗", color: "red" };
-  return { symbol: "○", color: "yellow" };
-}
-
 function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
+  const theme = useTheme();
+
+  function checkSymbol(status: string, conclusion: string): { symbol: string; color: string } {
+    if (status === "IN_PROGRESS") return { symbol: "●", color: theme.warning };
+    if (conclusion === "SUCCESS") return { symbol: "✓", color: theme.success };
+    if (conclusion === "FAILURE") return { symbol: "✗", color: theme.error };
+    return { symbol: "○", color: theme.warning };
+  }
+
   return (
     <DetailPane title={`#${pr.number} ${pr.title}`} height={height}>
       <Box gap={1}>
         <Text dimColor>Branch:</Text>
-        <Text color="cyan">{pr.headRefName}</Text>
+        <Text color={theme.branch}>{pr.headRefName}</Text>
         <Text dimColor>{"→"}</Text>
-        <Text color="cyan">{pr.baseRefName}</Text>
+        <Text color={theme.branch}>{pr.baseRefName}</Text>
       </Box>
       <Box gap={1}>
         <Text dimColor>Diff:</Text>
-        <Text color="green">+{pr.additions}</Text>
-        <Text color="red">-{pr.deletions}</Text>
+        <Text color={theme.success}>+{pr.additions}</Text>
+        <Text color={theme.error}>-{pr.deletions}</Text>
       </Box>
       {pr.assignees.length > 0 && (
         <Box gap={1}>
@@ -69,7 +71,7 @@ function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
       {pr.labels.length > 0 && (
         <Box gap={1}>
           <Text dimColor>Labels:</Text>
-          <Text color="yellow">{pr.labels.map((l) => l.name).join(", ")}</Text>
+          <Text color={theme.warning}>{pr.labels.map((l) => l.name).join(", ")}</Text>
         </Box>
       )}
       {pr.statusCheckRollup.map((check) => {
@@ -86,6 +88,7 @@ function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
 }
 
 export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrListProps) {
+  const { staleDays } = useConfig();
   const filter = useListFilter(onFilteringChange);
   const comment = useCommentInput(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
@@ -345,7 +348,7 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
       )}
       <Box flexDirection="column">
         {visible.map((pr, i) => (
-          <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} marked={markedNumbers.has(pr.number)} stale={isStale(pr.createdAt, STALE_DAYS)} />
+          <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} marked={markedNumbers.has(pr.number)} stale={isStale(pr.createdAt, staleDays)} />
         ))}
       </Box>
       {showDetail && selected && (

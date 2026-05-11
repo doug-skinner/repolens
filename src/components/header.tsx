@@ -1,6 +1,7 @@
 import { Box, Text } from "ink";
 import { VIEWS, VIEW_LABELS, type View, type RepoInfo } from "../lib/types.js";
 import { timeAgo } from "../lib/format.js";
+import { useTheme } from "../lib/config-context.js";
 
 interface HeaderProps {
   repo: RepoInfo | null;
@@ -12,26 +13,28 @@ interface HeaderProps {
 }
 
 export function Header({ repo, prCount, issueCount, reviewRequestCount, activeView, lastRefreshedAt }: HeaderProps) {
+  const theme = useTheme();
+
   return (
     <Box
       flexDirection="column"
       borderStyle="round"
-      borderColor="cyan"
+      borderColor={theme.accent}
       paddingX={1}
     >
       <Box gap={2}>
-        <Text bold color="cyan">
+        <Text bold color={theme.accent}>
           {repo?.nameWithOwner ?? "…"}
         </Text>
         {repo?.branch && (
           <Text dimColor>
-            on <Text color="yellow">{repo.branch}</Text>
+            on <Text color={theme.warning}>{repo.branch}</Text>
           </Text>
         )}
         <Text dimColor>
           {prCount} PR{prCount !== 1 ? "s" : ""} · {issueCount} issue{issueCount !== 1 ? "s" : ""}
           {reviewRequestCount > 0 && (
-            <Text color="magenta"> · {reviewRequestCount} review{reviewRequestCount !== 1 ? "s" : ""}</Text>
+            <Text color={theme.info}> · {reviewRequestCount} review{reviewRequestCount !== 1 ? "s" : ""}</Text>
           )}
         </Text>
         <Box flexGrow={1} />
@@ -41,7 +44,7 @@ export function Header({ repo, prCount, issueCount, reviewRequestCount, activeVi
       </Box>
       <Box gap={1}>
         {VIEWS.map((view, i) => (
-          <Text key={view} bold={view === activeView} color={view === activeView ? "cyan" : undefined} dimColor={view !== activeView}>
+          <Text key={view} bold={view === activeView} color={view === activeView ? theme.accent : undefined} dimColor={view !== activeView}>
             {i + 1}:{VIEW_LABELS[view]}
           </Text>
         ))}

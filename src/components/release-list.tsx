@@ -10,7 +10,7 @@ import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
 import { isStale } from "../lib/format.js";
-import { STALE_DAYS } from "../lib/config.js";
+import { useConfig } from "../lib/config-context.js";
 import { matchesFilter } from "../lib/filter.js";
 import { byDateDesc, byDateAsc, byNumberDesc } from "../lib/sort.js";
 import type { Release } from "../lib/types.js";
@@ -61,6 +61,7 @@ const SORT_OPTIONS = [
 ] as const;
 
 export function ReleaseList({ releases, username, onFilteringChange }: ReleaseListProps) {
+  const { staleDays } = useConfig();
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
   const [releaseType, setReleaseType] = useState<ReleaseType>("all");
@@ -116,7 +117,7 @@ export function ReleaseList({ releases, username, onFilteringChange }: ReleaseLi
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={releases.length} />
       <Box flexDirection="column">
         {visible.map((release, i) => (
-          <ReleaseRow key={release.tagName} release={release} selected={scrollOffset + i === selectedIndex} stale={isStale(release.publishedAt, STALE_DAYS)} />
+          <ReleaseRow key={release.tagName} release={release} selected={scrollOffset + i === selectedIndex} stale={isStale(release.publishedAt, staleDays)} />
         ))}
       </Box>
       {showDetail && selected && (

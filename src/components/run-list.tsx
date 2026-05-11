@@ -12,7 +12,7 @@ import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
 import { isStale } from "../lib/format.js";
-import { STALE_DAYS } from "../lib/config.js";
+import { useConfig, useTheme } from "../lib/config-context.js";
 import { matchesFilter } from "../lib/filter.js";
 import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
 import type { WorkflowRun, WorkflowJob } from "../lib/types.js";
@@ -29,19 +29,20 @@ interface RunListProps {
   onRunChanged?: () => void;
 }
 
-function jobSymbol(job: WorkflowJob): { symbol: string; color: string } {
-  if (job.status === "in_progress") return { symbol: "●", color: "yellow" };
-  if (job.status === "queued" || job.status === "waiting")
-    return { symbol: "○", color: "yellow" };
-  if (job.conclusion === "success") return { symbol: "✓", color: "green" };
-  if (job.conclusion === "failure") return { symbol: "✗", color: "red" };
-  if (job.conclusion === "cancelled") return { symbol: "⊘", color: "gray" };
-  return { symbol: "·", color: "gray" };
-}
-
 function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
+  const theme = useTheme();
   const [jobs, setJobs] = useState<WorkflowJob[] | null>(null);
   const [loading, setLoading] = useState(true);
+
+  function jobSymbol(job: WorkflowJob): { symbol: string; color: string } {
+    if (job.status === "in_progress") return { symbol: "●", color: theme.warning };
+    if (job.status === "queued" || job.status === "waiting")
+      return { symbol: "○", color: theme.warning };
+    if (job.conclusion === "success") return { symbol: "✓", color: theme.success };
+    if (job.conclusion === "failure") return { symbol: "✗", color: theme.error };
+    if (job.conclusion === "cancelled") return { symbol: "⊘", color: theme.muted };
+    return { symbol: "·", color: theme.muted };
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +63,7 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
     <DetailPane title={`${run.workflowName}: ${run.displayTitle}`} height={height}>
       <Box gap={1}>
         <Text dimColor>Branch:</Text>
-        <Text color="cyan">{run.headBranch}</Text>
+        <Text color={theme.branch}>{run.headBranch}</Text>
         <Text dimColor>Status:</Text>
         <Text>{run.status}{run.conclusion ? ` (${run.conclusion})` : ""}</Text>
       </Box>
@@ -86,7 +87,7 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
               {failedStep && (
                 <Box paddingLeft={2} gap={1}>
                   <Text dimColor>└</Text>
-                  <Text color="red">{failedStep.name}</Text>
+                  <Text color={theme.error}>{failedStep.name}</Text>
                 </Box>
               )}
             </Box>
@@ -100,6 +101,7 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
 }
 
 export function RunList({ runs, onFilteringChange, onRunChanged }: RunListProps) {
+  const { staleDays } = useConfig();
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
   const selectedIndexRef = useRef(0);
@@ -183,7 +185,7 @@ export function RunList({ runs, onFilteringChange, onRunChanged }: RunListProps)
       )}
       <Box flexDirection="column">
         {visible.map((run, i) => (
-          <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} stale={isStale(run.createdAt, STALE_DAYS)} />
+          <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} stale={isStale(run.createdAt, staleDays)} />
         ))}
       </Box>
       {showDetail && selected && (

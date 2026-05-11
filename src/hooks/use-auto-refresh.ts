@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-
-const REFRESH_INTERVAL_MS = 30_000;
+import { useConfig } from "../lib/config-context.js";
 
 interface UseAutoRefreshOptions {
   refetch: () => void;
@@ -8,6 +7,10 @@ interface UseAutoRefreshOptions {
 }
 
 export function useAutoRefresh({ refetch, paused }: UseAutoRefreshOptions) {
+  const { refreshInterval } = useConfig();
+  const intervalMs = refreshInterval * 1000;
+  const disabled = refreshInterval === 0;
+
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -25,22 +28,23 @@ export function useAutoRefresh({ refetch, paused }: UseAutoRefreshOptions) {
 
   const startTimer = useCallback(() => {
     clearTimer();
-    timerRef.current = setInterval(tick, REFRESH_INTERVAL_MS);
-  }, [clearTimer, tick]);
+    if (disabled) return;
+    timerRef.current = setInterval(tick, intervalMs);
+  }, [clearTimer, tick, disabled, intervalMs]);
 
   useEffect(() => {
-    if (paused) {
+    if (paused || disabled) {
       clearTimer();
     } else {
       startTimer();
     }
     return clearTimer;
-  }, [paused, startTimer, clearTimer]);
+  }, [paused, disabled, startTimer, clearTimer]);
 
   const refreshNow = useCallback(() => {
     tick();
-    if (!paused) startTimer();
-  }, [tick, paused, startTimer]);
+    if (!paused && !disabled) startTimer();
+  }, [tick, paused, disabled, startTimer]);
 
   return { lastRefreshedAt, refreshNow };
 }

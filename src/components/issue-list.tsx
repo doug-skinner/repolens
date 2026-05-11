@@ -14,7 +14,7 @@ import { useListFilter } from "../hooks/use-list-filter.js";
 import { useListSort } from "../hooks/use-list-sort.js";
 import { useCommentInput } from "../hooks/use-comment-input.js";
 import { isStale, timeAgo } from "../lib/format.js";
-import { STALE_DAYS } from "../lib/config.js";
+import { useConfig, useTheme } from "../lib/config-context.js";
 import { matchesFilter } from "../lib/filter.js";
 import { byDateDesc, byDateAsc, byStringAsc } from "../lib/sort.js";
 import type { Issue } from "../lib/types.js";
@@ -35,6 +35,8 @@ interface IssueListProps {
 }
 
 function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
+  const theme = useTheme();
+
   return (
     <DetailPane title={`#${issue.number} ${issue.title}`} height={height}>
       {issue.assignees.length > 0 && (
@@ -46,13 +48,13 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
       {issue.milestone && (
         <Box gap={1}>
           <Text dimColor>Milestone:</Text>
-          <Text color="cyan">{issue.milestone.title}</Text>
+          <Text color={theme.accent}>{issue.milestone.title}</Text>
         </Box>
       )}
       {issue.labels.length > 0 && (
         <Box gap={1}>
           <Text dimColor>Labels:</Text>
-          <Text color="yellow">{issue.labels.map((l) => l.name).join(", ")}</Text>
+          <Text color={theme.warning}>{issue.labels.map((l) => l.name).join(", ")}</Text>
         </Box>
       )}
       {issue.body ? (
@@ -68,7 +70,7 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
           {issue.comments.map((c, i) => (
             <Box key={i} flexDirection="column" marginTop={i === 0 ? 0 : 1}>
               <Text>
-                <Text color="cyan">{c.author.login}</Text>
+                <Text color={theme.accent}>{c.author.login}</Text>
                 <Text dimColor> · {timeAgo(c.createdAt)}</Text>
               </Text>
               <Text>{c.body}</Text>
@@ -81,6 +83,7 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
 }
 
 export function IssueList({ issues, username, onFilteringChange, onCreateIssue, onEditIssue, onIssueChanged }: IssueListProps) {
+  const { staleDays } = useConfig();
   const filter = useListFilter(onFilteringChange);
   const comment = useCommentInput(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
@@ -266,7 +269,7 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
       )}
       <Box flexDirection="column">
         {visible.map((issue, i) => (
-          <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} marked={markedNumbers.has(issue.number)} stale={isStale(issue.createdAt, STALE_DAYS)} />
+          <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} marked={markedNumbers.has(issue.number)} stale={isStale(issue.createdAt, staleDays)} />
         ))}
       </Box>
       {showDetail && selected && (

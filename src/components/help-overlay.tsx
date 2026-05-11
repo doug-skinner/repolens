@@ -1,4 +1,5 @@
 import { Box, Text, useInput } from "ink";
+import { useTheme } from "../lib/config-context.js";
 
 interface HelpOverlayProps {
   onClose: () => void;
@@ -75,6 +76,8 @@ const SECTIONS = [
 ];
 
 export function HelpOverlay({ onClose }: HelpOverlayProps) {
+  const theme = useTheme();
+
   useInput((input, key) => {
     if (input === "?" || key.escape) onClose();
   });
@@ -83,11 +86,11 @@ export function HelpOverlay({ onClose }: HelpOverlayProps) {
     <Box
       flexDirection="column"
       borderStyle="round"
-      borderColor="cyan"
+      borderColor={theme.accent}
       paddingX={2}
       paddingY={1}
     >
-      <Text bold color="cyan">
+      <Text bold color={theme.accent}>
         Keybindings
       </Text>
       {SECTIONS.map((section) => (
@@ -97,7 +100,7 @@ export function HelpOverlay({ onClose }: HelpOverlayProps) {
           </Text>
           {section.bindings.map(([key, desc]) => (
             <Box key={key} gap={1}>
-              <Text color="yellow">{key.padEnd(12)}</Text>
+              <Text color={theme.warning}>{key.padEnd(12)}</Text>
               <Text>{desc}</Text>
             </Box>
           ))}

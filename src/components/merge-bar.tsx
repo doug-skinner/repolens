@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
+import { useTheme } from "../lib/config-context.js";
 
 export type MergeStrategy = "merge" | "squash" | "rebase";
 
@@ -12,6 +13,8 @@ interface MergeBarProps {
 }
 
 export function MergeBar({ prNumber, prTitle, status, onSelect, onCancel }: MergeBarProps) {
+  const theme = useTheme();
+
   useInput((input, key) => {
     if (status !== "choosing") return;
     if (input === "m") onSelect("merge");
@@ -32,7 +35,7 @@ export function MergeBar({ prNumber, prTitle, status, onSelect, onCancel }: Merg
   if (status === "success") {
     return (
       <Box paddingX={1} gap={1}>
-        <Text color="green">✓</Text>
+        <Text color={theme.success}>✓</Text>
         <Text>Merged #{prNumber}</Text>
       </Box>
     );
@@ -41,7 +44,7 @@ export function MergeBar({ prNumber, prTitle, status, onSelect, onCancel }: Merg
   if (status === "error") {
     return (
       <Box paddingX={1} gap={1}>
-        <Text color="red">✗</Text>
+        <Text color={theme.error}>✗</Text>
         <Text>Failed to merge #{prNumber}</Text>
       </Box>
     );
@@ -49,7 +52,7 @@ export function MergeBar({ prNumber, prTitle, status, onSelect, onCancel }: Merg
 
   return (
     <Box paddingX={1} gap={1}>
-      <Text color="yellow">Merge #{prNumber} "{prTitle}"?</Text>
+      <Text color={theme.warning}>Merge #{prNumber} "{prTitle}"?</Text>
       <Text dimColor>m merge · s squash · r rebase · Esc cancel</Text>
     </Box>
   );
