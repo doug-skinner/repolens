@@ -6,8 +6,9 @@ import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
 import { CommentInput } from "./comment-input.js";
 import { ConfirmBar } from "./confirm-bar.js";
+import { MergeBar, type MergeStrategy } from "./merge-bar.js";
 import { PickerOverlay } from "./picker-overlay.js";
-import { openPrInBrowser, commentOnPr, mergePr, closePr, fetchLabels, fetchCollaborators, setPrLabels, setPrAssignees } from "../lib/gh.js";
+import { openPrInBrowser, commentOnPr, mergePr, closePr, approvePr, requestChangesPr, fetchLabels, fetchCollaborators, setPrLabels, setPrAssignees } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
@@ -91,8 +92,11 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
   const [mine, setMine] = useState(false);
   const commentTargetRef = useRef(0);
   const selectedIndexRef = useRef(0);
-  const [confirm, setConfirm] = useState<{ action: "merge" | "close"; number: number; title: string } | null>(null);
+  const [confirm, setConfirm] = useState<{ action: "close" | "approve"; number: number; title: string } | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
+  const [merge, setMerge] = useState<{ number: number; title: string } | null>(null);
+  const [mergeStatus, setMergeStatus] = useState<"choosing" | "working" | "success" | "error">("choosing");
+  const commentModeRef = useRef<"comment" | "request-changes">("comment");
 
   const [picker, setPicker] = useState<{ kind: "labels" | "assignees"; number: number; current: Set<string> } | null>(null);
   const [pickerOptions, setPickerOptions] = useState<string[]>([]);
@@ -146,7 +150,7 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
     onFilteringChange?.(false);
   }, [onFilteringChange]);
 
-  const startAction = useCallback((action: "merge" | "close", i: number) => {
+  const startConfirm = useCallback((action: "close" | "approve", i: number) => {
     const pr = sorted[i];
     if (!pr) return;
     setConfirm({ action, number: pr.number, title: pr.title });
@@ -158,7 +162,7 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
     if (!confirm) return;
     setConfirmStatus("working");
     try {
-      if (confirm.action === "merge") await mergePr(confirm.number);
+      if (confirm.action === "approve") await approvePr(confirm.number);
       else await closePr(confirm.number);
       setConfirmStatus("success");
       onPrChanged?.();
@@ -183,32 +187,84 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
     onFilteringChange?.(false);
   }, [onFilteringChange]);
 
+  const startMerge = useCallback((i: number) => {
+    const pr = sorted[i];
+    if (!pr) return;
+    setMerge({ number: pr.number, title: pr.title });
+    setMergeStatus("choosing");
+    onFilteringChange?.(true);
+  }, [sorted, onFilteringChange]);
+
+  const handleMergeSelect = useCallback(async (strategy: MergeStrategy) => {
+    if (!merge) return;
+    setMergeStatus("working");
+    try {
+      await mergePr(merge.number, strategy);
+      setMergeStatus("success");
+      onPrChanged?.();
+      setTimeout(() => {
+        setMerge(null);
+        setMergeStatus("choosing");
+        onFilteringChange?.(false);
+      }, 1500);
+    } catch {
+      setMergeStatus("error");
+      setTimeout(() => {
+        setMerge(null);
+        setMergeStatus("choosing");
+        onFilteringChange?.(false);
+      }, 2000);
+    }
+  }, [merge, onPrChanged, onFilteringChange]);
+
+  const handleMergeCancel = useCallback(() => {
+    setMerge(null);
+    setMergeStatus("choosing");
+    onFilteringChange?.(false);
+  }, [onFilteringChange]);
+
+  const startRequestChanges = useCallback((i: number) => {
+    const pr = sorted[i];
+    if (!pr) return;
+    commentModeRef.current = "request-changes";
+    commentTargetRef.current = pr.number;
+    comment.startEditing(`Request changes on #${pr.number}`);
+  }, [sorted, comment.startEditing]);
+
   const extraKeys = useMemo(() => ({
     s: sort.cycleSort,
     m: toggleMine,
-    M: () => startAction("merge", selectedIndexRef.current),
-    x: () => startAction("close", selectedIndexRef.current),
+    M: () => startMerge(selectedIndexRef.current),
+    x: () => startConfirm("close", selectedIndexRef.current),
+    a: () => startConfirm("approve", selectedIndexRef.current),
+    X: () => startRequestChanges(selectedIndexRef.current),
     l: () => openPicker("labels", selectedIndexRef.current),
     A: () => openPicker("assignees", selectedIndexRef.current),
-  }), [sort.cycleSort, toggleMine, startAction, openPicker]);
+  }), [sort.cycleSort, toggleMine, startMerge, startConfirm, startRequestChanges, openPicker]);
 
   const onOpen = useCallback((i: number) => openPrInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
   const onYankRef = useCallback((i: number) => copyToClipboard(`#${sorted[i].number}`), [sorted]);
   const onStartComment = useCallback((i: number) => {
+    commentModeRef.current = "comment";
     commentTargetRef.current = sorted[i].number;
     comment.startEditing(`#${sorted[i].number}`);
   }, [sorted, comment.startEditing]);
   const onCommentSubmit = useCallback(async (text: string) => {
     try {
-      await commentOnPr(commentTargetRef.current, text);
+      if (commentModeRef.current === "request-changes") {
+        await requestChangesPr(commentTargetRef.current, text);
+      } else {
+        await commentOnPr(commentTargetRef.current, text);
+      }
       comment.resolveSubmit();
+      if (commentModeRef.current === "request-changes") onPrChanged?.();
     } catch {
       comment.rejectSubmit();
     }
-  }, [comment.resolveSubmit, comment.rejectSubmit]);
+  }, [comment.resolveSubmit, comment.rejectSubmit, onPrChanged]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirm || !!picker });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirm || !!merge || !!picker });
   selectedIndexRef.current = selectedIndex;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
@@ -218,12 +274,14 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
   if (sort.current !== "newest") tags.push(sort.label);
   const viewLabel = tags.length > 0 ? `PRs [${tags.join(", ")}]` : "PRs";
 
+  const confirmLabel = confirm?.action === "approve" ? "Approve" : "Close";
+  const confirmPast = confirm?.action === "approve" ? "Approved" : "Closed";
   const confirmMessage = confirm
     ? confirmStatus === "success"
-      ? `${confirm.action === "merge" ? "Merged" : "Closed"} #${confirm.number}`
+      ? `${confirmPast} #${confirm.number}`
       : confirmStatus === "error"
-        ? `Failed to ${confirm.action} #${confirm.number}`
-        : `${confirm.action === "merge" ? "Merge" : "Close"} #${confirm.number} "${confirm.title}"?`
+        ? `Failed to ${confirmLabel.toLowerCase()} #${confirm.number}`
+        : `${confirmLabel} #${confirm.number} "${confirm.title}"?`
     : "";
 
   return (
@@ -239,6 +297,15 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
           loading={pickerLoading}
           onConfirm={handlePickerConfirm}
           onCancel={handlePickerCancel}
+        />
+      )}
+      {merge && (
+        <MergeBar
+          prNumber={merge.number}
+          prTitle={merge.title}
+          status={mergeStatus}
+          onSelect={handleMergeSelect}
+          onCancel={handleMergeCancel}
         />
       )}
       {confirm && (

@@ -51,8 +51,10 @@ const SECTIONS = [
   {
     title: "Pull Requests",
     bindings: [
-      ["M", "Merge selected PR"],
+      ["M", "Merge (pick strategy)"],
       ["x", "Close selected PR"],
+      ["a", "Approve selected PR"],
+      ["X", "Request changes"],
       ["l", "Toggle labels"],
       ["A", "Toggle assignees"],
     ],

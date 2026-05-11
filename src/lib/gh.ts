@@ -121,8 +121,16 @@ export async function closeIssue(number: number): Promise<void> {
   await $`gh issue close ${number}`.quiet();
 }
 
-export async function mergePr(number: number): Promise<void> {
-  await $`gh pr merge ${number} --merge`.quiet();
+export async function mergePr(number: number, strategy: "merge" | "squash" | "rebase" = "merge"): Promise<void> {
+  await $`gh pr merge ${number} --${strategy}`.quiet();
+}
+
+export async function approvePr(number: number): Promise<void> {
+  await $`gh pr review ${number} --approve`.quiet();
+}
+
+export async function requestChangesPr(number: number, body: string): Promise<void> {
+  await $`gh pr review ${number} --request-changes --body ${body}`.quiet();
 }
 
 export async function closePr(number: number): Promise<void> {
