@@ -246,11 +246,11 @@ export function App() {
 
   return (
     <Box flexDirection="column" paddingX={1} height={stdout?.rows}>
-      <Header repo={repo} prCount={prs.length} issueCount={issues.length} reviewRequestCount={reviewRequestCount} activeView={activeView} lastRefreshedAt={lastRefreshedAt} />
+      {initialReady.current && <Header repo={repo} prCount={prs.length} issueCount={issues.length} reviewRequestCount={reviewRequestCount} activeView={activeView} lastRefreshedAt={lastRefreshedAt} />}
       <Box marginTop={1} flexDirection="column" flexGrow={1} overflow="hidden">
         {showHelp ? <HelpOverlay onClose={() => setShowHelp(false)} /> : renderView()}
       </Box>
-      {!showHelp && !isCreatingIssue && !editingIssue && <Footer activeView={activeView} />}
+      {initialReady.current && !showHelp && !isCreatingIssue && !editingIssue && <Footer activeView={activeView} />}
     </Box>
   );
 }
