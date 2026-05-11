@@ -13,6 +13,7 @@ const PR_FIELDS = [
   "isDraft",
   "createdAt",
   "labels",
+  "assignees",
   "reviewRequests",
   "additions",
   "deletions",
@@ -242,6 +243,39 @@ export async function fetchReleases(): Promise<Release[]> {
 
 export async function openReleaseInBrowser(tagName: string): Promise<void> {
   await $`gh release view ${tagName} --web`.quiet();
+}
+
+export async function fetchCollaborators(): Promise<string[]> {
+  const result = await $`gh api repos/{owner}/{repo}/collaborators --jq '.[].login'`.quiet();
+  return result.text().trim().split("\n").filter(Boolean).sort((a, b) => a.localeCompare(b));
+}
+
+export async function setIssueLabels(number: number, add: string[], remove: string[]): Promise<void> {
+  const args: string[] = [];
+  if (add.length) args.push("--add-label", add.join(","));
+  if (remove.length) args.push("--remove-label", remove.join(","));
+  if (args.length) await $`gh issue edit ${number} ${args}`.quiet();
+}
+
+export async function setPrLabels(number: number, add: string[], remove: string[]): Promise<void> {
+  const args: string[] = [];
+  if (add.length) args.push("--add-label", add.join(","));
+  if (remove.length) args.push("--remove-label", remove.join(","));
+  if (args.length) await $`gh pr edit ${number} ${args}`.quiet();
+}
+
+export async function setIssueAssignees(number: number, add: string[], remove: string[]): Promise<void> {
+  const args: string[] = [];
+  if (add.length) args.push("--add-assignee", add.join(","));
+  if (remove.length) args.push("--remove-assignee", remove.join(","));
+  if (args.length) await $`gh issue edit ${number} ${args}`.quiet();
+}
+
+export async function setPrAssignees(number: number, add: string[], remove: string[]): Promise<void> {
+  const args: string[] = [];
+  if (add.length) args.push("--add-assignee", add.join(","));
+  if (remove.length) args.push("--remove-assignee", remove.join(","));
+  if (args.length) await $`gh pr edit ${number} ${args}`.quiet();
 }
 
 export async function fetchReviewRequestCount(): Promise<number> {

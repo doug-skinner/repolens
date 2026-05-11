@@ -6,7 +6,8 @@ import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
 import { CommentInput } from "./comment-input.js";
 import { ConfirmBar } from "./confirm-bar.js";
-import { openPrInBrowser, commentOnPr, mergePr, closePr } from "../lib/gh.js";
+import { PickerOverlay } from "./picker-overlay.js";
+import { openPrInBrowser, commentOnPr, mergePr, closePr, fetchLabels, fetchCollaborators, setPrLabels, setPrAssignees } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
@@ -52,6 +53,12 @@ function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
         <Text color="green">+{pr.additions}</Text>
         <Text color="red">-{pr.deletions}</Text>
       </Box>
+      {pr.assignees.length > 0 && (
+        <Box gap={1}>
+          <Text dimColor>Assignees:</Text>
+          <Text>{pr.assignees.map((a) => a.login).join(", ")}</Text>
+        </Box>
+      )}
       {pr.reviewRequests.length > 0 && (
         <Box gap={1}>
           <Text dimColor>Reviewers:</Text>
@@ -87,6 +94,10 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
   const [confirm, setConfirm] = useState<{ action: "merge" | "close"; number: number; title: string } | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
 
+  const [picker, setPicker] = useState<{ kind: "labels" | "assignees"; number: number; current: Set<string> } | null>(null);
+  const [pickerOptions, setPickerOptions] = useState<string[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+
   const toggleMine = useCallback(() => setMine((v) => !v), []);
 
   const sorted = useMemo(() => {
@@ -101,6 +112,39 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
     else if (sort.current === "newest") items.sort((a, b) => byDateDesc(a.createdAt, b.createdAt));
     return items;
   }, [prs, filter.filterQuery, mine, username, sort.current]);
+
+  const openPicker = useCallback((kind: "labels" | "assignees", i: number) => {
+    const pr = sorted[i];
+    if (!pr) return;
+    const current = kind === "labels"
+      ? new Set(pr.labels.map((l) => l.name))
+      : new Set(pr.assignees.map((a) => a.login));
+    setPicker({ kind, number: pr.number, current });
+    setPickerLoading(true);
+    onFilteringChange?.(true);
+    const fetch = kind === "labels" ? fetchLabels() : fetchCollaborators();
+    fetch.then((opts) => { setPickerOptions(opts); setPickerLoading(false); })
+      .catch(() => { setPickerOptions([]); setPickerLoading(false); });
+  }, [sorted, onFilteringChange]);
+
+  const handlePickerConfirm = useCallback(async (selected: Set<string>) => {
+    if (!picker) return;
+    const { kind, number, current } = picker;
+    const add = [...selected].filter((s) => !current.has(s));
+    const remove = [...current].filter((s) => !selected.has(s));
+    try {
+      if (kind === "labels") await setPrLabels(number, add, remove);
+      else await setPrAssignees(number, add, remove);
+      onPrChanged?.();
+    } catch { /* silently fail */ }
+    setPicker(null);
+    onFilteringChange?.(false);
+  }, [picker, onPrChanged, onFilteringChange]);
+
+  const handlePickerCancel = useCallback(() => {
+    setPicker(null);
+    onFilteringChange?.(false);
+  }, [onFilteringChange]);
 
   const startAction = useCallback((action: "merge" | "close", i: number) => {
     const pr = sorted[i];
@@ -144,7 +188,9 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
     m: toggleMine,
     M: () => startAction("merge", selectedIndexRef.current),
     x: () => startAction("close", selectedIndexRef.current),
-  }), [sort.cycleSort, toggleMine, startAction]);
+    l: () => openPicker("labels", selectedIndexRef.current),
+    A: () => openPicker("assignees", selectedIndexRef.current),
+  }), [sort.cycleSort, toggleMine, startAction, openPicker]);
 
   const onOpen = useCallback((i: number) => openPrInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
@@ -162,7 +208,7 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
     }
   }, [comment.resolveSubmit, comment.rejectSubmit]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirm });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirm || !!picker });
   selectedIndexRef.current = selectedIndex;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
@@ -185,6 +231,16 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
       <Breadcrumb view={viewLabel} detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={prs.length} />
       <CommentInput targetLabel={comment.targetLabel} text={comment.commentText} isEditing={comment.isEditing} status={comment.status} />
+      {picker && (
+        <PickerOverlay
+          title={picker.kind === "labels" ? "Labels" : "Assignees"}
+          options={pickerOptions}
+          selected={picker.current}
+          loading={pickerLoading}
+          onConfirm={handlePickerConfirm}
+          onCancel={handlePickerCancel}
+        />
+      )}
       {confirm && (
         <ConfirmBar
           message={confirmMessage}

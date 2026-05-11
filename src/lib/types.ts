@@ -15,6 +15,7 @@ export interface PullRequest {
   isDraft: boolean;
   createdAt: string;
   labels: Label[];
+  assignees: { login: string }[];
   additions: number;
   deletions: number;
 }

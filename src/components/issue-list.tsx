@@ -6,7 +6,8 @@ import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
 import { CommentInput } from "./comment-input.js";
 import { ConfirmBar } from "./confirm-bar.js";
-import { openIssueInBrowser, commentOnIssue, closeIssue } from "../lib/gh.js";
+import { PickerOverlay } from "./picker-overlay.js";
+import { openIssueInBrowser, commentOnIssue, closeIssue, fetchLabels, fetchCollaborators, setIssueLabels, setIssueAssignees } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
@@ -89,6 +90,10 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
   const [confirmClose, setConfirmClose] = useState<{ number: number; title: string } | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
 
+  const [picker, setPicker] = useState<{ kind: "labels" | "assignees"; number: number; current: Set<string> } | null>(null);
+  const [pickerOptions, setPickerOptions] = useState<string[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+
   const toggleMine = useCallback(() => setMine((v) => !v), []);
 
   const sorted = useMemo(() => {
@@ -103,6 +108,39 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
     else if (sort.current === "newest") items.sort((a, b) => byDateDesc(a.createdAt, b.createdAt));
     return items;
   }, [issues, filter.filterQuery, mine, username, sort.current]);
+
+  const openPicker = useCallback((kind: "labels" | "assignees", i: number) => {
+    const issue = sorted[i];
+    if (!issue) return;
+    const current = kind === "labels"
+      ? new Set(issue.labels.map((l) => l.name))
+      : new Set(issue.assignees.map((a) => a.login));
+    setPicker({ kind, number: issue.number, current });
+    setPickerLoading(true);
+    onFilteringChange?.(true);
+    const fetch = kind === "labels" ? fetchLabels() : fetchCollaborators();
+    fetch.then((opts) => { setPickerOptions(opts); setPickerLoading(false); })
+      .catch(() => { setPickerOptions([]); setPickerLoading(false); });
+  }, [sorted, onFilteringChange]);
+
+  const handlePickerConfirm = useCallback(async (selected: Set<string>) => {
+    if (!picker) return;
+    const { kind, number, current } = picker;
+    const add = [...selected].filter((s) => !current.has(s));
+    const remove = [...current].filter((s) => !selected.has(s));
+    try {
+      if (kind === "labels") await setIssueLabels(number, add, remove);
+      else await setIssueAssignees(number, add, remove);
+      onIssueChanged?.();
+    } catch { /* silently fail */ }
+    setPicker(null);
+    onFilteringChange?.(false);
+  }, [picker, onIssueChanged, onFilteringChange]);
+
+  const handlePickerCancel = useCallback(() => {
+    setPicker(null);
+    onFilteringChange?.(false);
+  }, [onFilteringChange]);
 
   const startClose = useCallback((i: number) => {
     const issue = sorted[i];
@@ -145,8 +183,10 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
     if (onCreateIssue) keys.c = onCreateIssue;
     if (onEditIssue) keys.e = () => { const issue = sorted[selectedIndexRef.current]; if (issue) onEditIssue(issue); };
     keys.x = () => startClose(selectedIndexRef.current);
+    keys.l = () => openPicker("labels", selectedIndexRef.current);
+    keys.A = () => openPicker("assignees", selectedIndexRef.current);
     return keys;
-  }, [sort.cycleSort, toggleMine, onCreateIssue, onEditIssue, sorted, startClose]);
+  }, [sort.cycleSort, toggleMine, onCreateIssue, onEditIssue, sorted, startClose, openPicker]);
 
   const onOpen = useCallback((i: number) => openIssueInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
@@ -164,7 +204,7 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
     }
   }, [comment.resolveSubmit, comment.rejectSubmit]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirmClose });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirmClose || !!picker });
   selectedIndexRef.current = selectedIndex;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
@@ -179,6 +219,16 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
       <Breadcrumb view={viewLabel} detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={issues.length} />
       <CommentInput targetLabel={comment.targetLabel} text={comment.commentText} isEditing={comment.isEditing} status={comment.status} />
+      {picker && (
+        <PickerOverlay
+          title={picker.kind === "labels" ? "Labels" : "Assignees"}
+          options={pickerOptions}
+          selected={picker.current}
+          loading={pickerLoading}
+          onConfirm={handlePickerConfirm}
+          onCancel={handlePickerCancel}
+        />
+      )}
       {confirmClose && (
         <ConfirmBar
           message={confirmStatus === "success" ? `Closed #${confirmClose.number}` : confirmStatus === "error" ? `Failed to close #${confirmClose.number}` : `Close #${confirmClose.number} "${confirmClose.title}"?`}

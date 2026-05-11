@@ -37,6 +37,8 @@ const SECTIONS = [
       ["c", "Create new issue"],
       ["e", "Edit selected issue"],
       ["x", "Close selected issue"],
+      ["l", "Toggle labels"],
+      ["A", "Toggle assignees"],
     ],
   },
   {
@@ -51,6 +53,8 @@ const SECTIONS = [
     bindings: [
       ["M", "Merge selected PR"],
       ["x", "Close selected PR"],
+      ["l", "Toggle labels"],
+      ["A", "Toggle assignees"],
     ],
   },
   {
