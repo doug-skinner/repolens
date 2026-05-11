@@ -46,6 +46,7 @@ const SECTIONS = [
   {
     title: "Milestones",
     bindings: [
+      ["x", "Close selected milestone"],
       ["i", "Navigate issues in detail pane"],
       ["u", "Unlink issue from milestone"],
     ],

@@ -5,7 +5,7 @@ import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
 import { ConfirmBar } from "./confirm-bar.js";
-import { openMilestoneInBrowser, fetchMilestoneIssues, openIssueInBrowser, setIssueMilestone } from "../lib/gh.js";
+import { openMilestoneInBrowser, fetchMilestoneIssues, openIssueInBrowser, setIssueMilestone, closeMilestone } from "../lib/gh.js";
 import type { MilestoneIssue } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useConfig, useTheme } from "../lib/config-context.js";
@@ -231,6 +231,9 @@ export function MilestoneList({ milestones, onFilteringChange, onMilestoneChange
   const sort = useListSort(SORT_OPTIONS, milestoneSort);
   const [detailFocused, setDetailFocused] = useState(false);
   const showDetailRef = useRef(false);
+  const selectedIndexRef = useRef(0);
+  const [confirmClose, setConfirmClose] = useState<{ number: number; title: string } | null>(null);
+  const [confirmStatus, setConfirmStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
 
   const sorted = useMemo(() => {
     const items = milestones.filter((ms) => matchesFilter(ms.title, filter.filterQuery));
@@ -261,14 +264,55 @@ export function MilestoneList({ milestones, onFilteringChange, onMilestoneChange
     onFilteringChange?.(false);
   }, [onFilteringChange]);
 
-  const extraKeys = useMemo(() => ({ s: sort.cycleSort, i: enterDetailFocus }), [sort.cycleSort, enterDetailFocus]);
+  const startClose = useCallback((i: number) => {
+    const ms = sorted[i];
+    if (!ms) return;
+    setConfirmClose({ number: ms.number, title: ms.title });
+    setConfirmStatus("confirming");
+    onFilteringChange?.(true);
+  }, [sorted, onFilteringChange]);
+
+  const handleConfirmClose = useCallback(async () => {
+    if (!confirmClose) return;
+    setConfirmStatus("working");
+    try {
+      await closeMilestone(confirmClose.number);
+      setConfirmStatus("success");
+      onMilestoneChanged?.();
+      setTimeout(() => {
+        setConfirmClose(null);
+        setConfirmStatus("confirming");
+        onFilteringChange?.(false);
+      }, 1500);
+    } catch {
+      setConfirmStatus("error");
+      setTimeout(() => {
+        setConfirmClose(null);
+        setConfirmStatus("confirming");
+        onFilteringChange?.(false);
+      }, 2000);
+    }
+  }, [confirmClose, onMilestoneChanged, onFilteringChange]);
+
+  const handleCancelClose = useCallback(() => {
+    setConfirmClose(null);
+    setConfirmStatus("confirming");
+    onFilteringChange?.(false);
+  }, [onFilteringChange]);
+
+  const extraKeys = useMemo(() => ({
+    s: sort.cycleSort,
+    i: enterDetailFocus,
+    x: () => startClose(selectedIndexRef.current),
+  }), [sort.cycleSort, enterDetailFocus, startClose]);
 
   const onOpen = useCallback((i: number) => openMilestoneInBrowser(sorted[i].html_url), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].html_url), [sorted]);
   const onYankRef = useCallback((i: number) => copyToClipboard(sorted[i].title), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current, inputBlocked: detailFocused });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current, inputBlocked: detailFocused || !!confirmClose });
   showDetailRef.current = showDetail;
+  selectedIndexRef.current = selectedIndex;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -278,6 +322,14 @@ export function MilestoneList({ milestones, onFilteringChange, onMilestoneChange
     <Box flexDirection="column">
       <Breadcrumb view={viewLabel} detail={showDetail && selected ? selected.title : undefined} />
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={milestones.length} />
+      {confirmClose && (
+        <ConfirmBar
+          message={confirmStatus === "success" ? `Closed "${confirmClose.title}"` : confirmStatus === "error" ? `Failed to close "${confirmClose.title}"` : `Close milestone "${confirmClose.title}"?`}
+          status={confirmStatus}
+          onConfirm={handleConfirmClose}
+          onCancel={handleCancelClose}
+        />
+      )}
       <Box flexDirection="column">
         {visible.map((ms, i) => (
           <MilestoneRow key={ms.number} milestone={ms} selected={scrollOffset + i === selectedIndex} />

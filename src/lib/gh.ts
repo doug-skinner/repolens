@@ -184,6 +184,10 @@ export async function setIssueMilestone(number: number, milestone: string): Prom
   await $`gh issue edit ${number} --milestone ${milestone}`.quiet();
 }
 
+export async function closeMilestone(number: number): Promise<void> {
+  await $`gh api repos/{owner}/{repo}/milestones/${number} -X PATCH -f state=closed`.quiet();
+}
+
 export async function openMilestoneInBrowser(url: string): Promise<void> {
   await $`open ${url}`.quiet();
 }
