@@ -1,11 +1,12 @@
-import { useCallback, useState, useEffect, useMemo } from "react";
-import { Box, Text } from "ink";
+import { useCallback, useState, useEffect, useMemo, useRef } from "react";
+import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { MilestoneRow } from "./milestone-row.js";
 import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
-import { openMilestoneInBrowser, fetchMilestoneIssues } from "../lib/gh.js";
+import { ConfirmBar } from "./confirm-bar.js";
+import { openMilestoneInBrowser, fetchMilestoneIssues, openIssueInBrowser, setIssueMilestone } from "../lib/gh.js";
 import type { MilestoneIssue } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
@@ -25,11 +26,29 @@ const SORT_OPTIONS = [
 interface MilestoneListProps {
   milestones: Milestone[];
   onFilteringChange?: (editing: boolean) => void;
+  onMilestoneChanged?: () => void;
 }
 
-function MilestoneDetail({ milestone, height }: { milestone: Milestone; height: number }) {
+function MilestoneDetail({
+  milestone,
+  height,
+  focused,
+  onExit,
+  onUnlinked,
+}: {
+  milestone: Milestone;
+  height: number;
+  focused: boolean;
+  onExit: () => void;
+  onUnlinked: () => void;
+}) {
   const [issues, setIssues] = useState<MilestoneIssue[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cursor, setCursor] = useState(0);
+  const [showIssueDetail, setShowIssueDetail] = useState(false);
+  const scrollOffsetRef = useRef(0);
+  const [confirmUnlink, setConfirmUnlink] = useState<number | null>(null);
+  const [unlinkStatus, setUnlinkStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
 
   useEffect(() => {
     let cancelled = false;
@@ -46,10 +65,101 @@ function MilestoneDetail({ milestone, height }: { milestone: Milestone; height: 
     return () => { cancelled = true; };
   }, [milestone.number]);
 
+  useEffect(() => {
+    setCursor(0);
+    scrollOffsetRef.current = 0;
+    setShowIssueDetail(false);
+  }, [issues]);
+
+  const innerHeight = Math.max(0, height - 2);
+  const headerLines = 1 + (milestone.description ? 1 : 0);
+  const hintLines = 1;
+  const confirmLines = confirmUnlink !== null ? 1 : 0;
+  const availableForContent = Math.max(1, innerHeight - headerLines - hintLines - confirmLines);
+
+  const issueCount = issues?.length ?? 0;
+  const issueListHeight = showIssueDetail
+    ? Math.min(3, issueCount, availableForContent)
+    : Math.min(issueCount, availableForContent);
+
+  const safeCursor = issueCount > 0 ? Math.min(cursor, issueCount - 1) : 0;
+  let issueOffset = scrollOffsetRef.current;
+  if (safeCursor < issueOffset) issueOffset = safeCursor;
+  if (safeCursor >= issueOffset + issueListHeight) issueOffset = safeCursor - issueListHeight + 1;
+  issueOffset = Math.max(0, issueOffset);
+  scrollOffsetRef.current = issueOffset;
+
+  const handleConfirmUnlink = useCallback(async () => {
+    if (confirmUnlink === null) return;
+    setUnlinkStatus("working");
+    try {
+      await setIssueMilestone(confirmUnlink, "");
+      setUnlinkStatus("success");
+      onUnlinked();
+      const updated = await fetchMilestoneIssues(milestone.title);
+      setIssues(updated);
+      setTimeout(() => {
+        setConfirmUnlink(null);
+        setUnlinkStatus("confirming");
+      }, 1500);
+    } catch {
+      setUnlinkStatus("error");
+      setTimeout(() => {
+        setConfirmUnlink(null);
+        setUnlinkStatus("confirming");
+      }, 2000);
+    }
+  }, [confirmUnlink, milestone.title, onUnlinked]);
+
+  const handleCancelUnlink = useCallback(() => {
+    setConfirmUnlink(null);
+    setUnlinkStatus("confirming");
+  }, []);
+
+  useInput((input, key) => {
+    if (!focused) return;
+
+    if (key.escape) {
+      if (confirmUnlink !== null) return;
+      setShowIssueDetail(false);
+      onExit();
+      return;
+    }
+
+    if (confirmUnlink !== null) return;
+    if (!issues || issues.length === 0) return;
+
+    if (input === "j" || key.downArrow) {
+      setCursor((c) => Math.min(issues.length - 1, c + 1));
+    } else if (input === "k" || key.upArrow) {
+      setCursor((c) => Math.max(0, c - 1));
+    } else if (input === "G") {
+      setCursor(issues.length - 1);
+    } else if (input === "o") {
+      openIssueInBrowser(issues[safeCursor].number);
+    } else if (input === "d" || key.return) {
+      setShowIssueDetail((v) => !v);
+    } else if (input === "u") {
+      setConfirmUnlink(issues[safeCursor].number);
+      setUnlinkStatus("confirming");
+    }
+  });
+
+  const selectedIssue = issues?.[safeCursor];
+  const visibleIssues = issues?.slice(issueOffset, issueOffset + issueListHeight) ?? [];
+
   return (
     <DetailPane title={milestone.title} height={height}>
       {milestone.description && (
         <Text dimColor>{milestone.description}</Text>
+      )}
+      {confirmUnlink !== null && (
+        <ConfirmBar
+          message={unlinkStatus === "success" ? `Unlinked #${confirmUnlink}` : unlinkStatus === "error" ? `Failed to unlink #${confirmUnlink}` : `Unlink #${confirmUnlink} from ${milestone.title}?`}
+          status={unlinkStatus}
+          onConfirm={handleConfirmUnlink}
+          onCancel={handleCancelUnlink}
+        />
       )}
       {loading ? (
         <Box gap={1}>
@@ -57,25 +167,68 @@ function MilestoneDetail({ milestone, height }: { milestone: Milestone; height: 
           <Text dimColor>Loading issues…</Text>
         </Box>
       ) : issues && issues.length > 0 ? (
-        issues.map((issue) => (
-          <Box key={issue.number} gap={1}>
-            <Text color={issue.state === "OPEN" ? "green" : "magenta"}>
-              {issue.state === "OPEN" ? "○" : "●"}
-            </Text>
-            <Text dimColor>#{issue.number}</Text>
-            <Text>{issue.title}</Text>
-          </Box>
-        ))
+        <>
+          {visibleIssues.map((issue, i) => {
+            const idx = issueOffset + i;
+            const isSelected = focused && idx === safeCursor;
+            return (
+              <Box key={issue.number} gap={1}>
+                {focused && (
+                  <Text color={isSelected ? "cyan" : undefined}>
+                    {isSelected ? "▸" : " "}
+                  </Text>
+                )}
+                <Text color={issue.state === "OPEN" ? "green" : "magenta"}>
+                  {issue.state === "OPEN" ? "○" : "●"}
+                </Text>
+                <Text dimColor>#{issue.number}</Text>
+                <Text bold={isSelected}>{issue.title}</Text>
+              </Box>
+            );
+          })}
+          {showIssueDetail && selectedIssue && (
+            <Box flexDirection="column" marginTop={1} overflow="hidden">
+              {selectedIssue.assignees.length > 0 && (
+                <Box gap={1}>
+                  <Text dimColor>Assignees:</Text>
+                  <Text>{selectedIssue.assignees.map((a) => a.login).join(", ")}</Text>
+                </Box>
+              )}
+              {selectedIssue.labels.length > 0 && (
+                <Box gap={1}>
+                  <Text dimColor>Labels:</Text>
+                  <Text color="yellow">{selectedIssue.labels.map((l) => l.name).join(", ")}</Text>
+                </Box>
+              )}
+              {selectedIssue.body ? (
+                <Text>{selectedIssue.body}</Text>
+              ) : (
+                <Text dimColor>No description</Text>
+              )}
+            </Box>
+          )}
+        </>
       ) : (
         <Text dimColor>No issues</Text>
       )}
+      {focused ? (
+        issues && issues.length > 0 ? (
+          <Text dimColor>j/k navigate · d detail · o open · u unlink · Esc back</Text>
+        ) : (
+          <Text dimColor>Esc back</Text>
+        )
+      ) : !loading && issues && issues.length > 0 ? (
+        <Text dimColor>i to navigate issues</Text>
+      ) : null}
     </DetailPane>
   );
 }
 
-export function MilestoneList({ milestones, onFilteringChange }: MilestoneListProps) {
+export function MilestoneList({ milestones, onFilteringChange, onMilestoneChanged }: MilestoneListProps) {
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
+  const [detailFocused, setDetailFocused] = useState(false);
+  const showDetailRef = useRef(false);
 
   const sorted = useMemo(() => {
     const items = milestones.filter((ms) => matchesFilter(ms.title, filter.filterQuery));
@@ -95,13 +248,25 @@ export function MilestoneList({ milestones, onFilteringChange }: MilestoneListPr
     return items;
   }, [milestones, filter.filterQuery, sort.current]);
 
-  const extraKeys = useMemo(() => ({ s: sort.cycleSort }), [sort.cycleSort]);
+  const enterDetailFocus = useCallback(() => {
+    if (!showDetailRef.current) return;
+    setDetailFocused(true);
+    onFilteringChange?.(true);
+  }, [onFilteringChange]);
+
+  const exitDetailFocus = useCallback(() => {
+    setDetailFocused(false);
+    onFilteringChange?.(false);
+  }, [onFilteringChange]);
+
+  const extraKeys = useMemo(() => ({ s: sort.cycleSort, i: enterDetailFocus }), [sort.cycleSort, enterDetailFocus]);
 
   const onOpen = useCallback((i: number) => openMilestoneInBrowser(sorted[i].html_url), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].html_url), [sorted]);
   const onYankRef = useCallback((i: number) => copyToClipboard(sorted[i].title), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current, inputBlocked: detailFocused });
+  showDetailRef.current = showDetail;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -117,7 +282,13 @@ export function MilestoneList({ milestones, onFilteringChange }: MilestoneListPr
         ))}
       </Box>
       {showDetail && selected && (
-        <MilestoneDetail milestone={selected} height={detailHeight} />
+        <MilestoneDetail
+          milestone={selected}
+          height={detailHeight}
+          focused={detailFocused}
+          onExit={exitDetailFocus}
+          onUnlinked={() => onMilestoneChanged?.()}
+        />
       )}
     </Box>
   );

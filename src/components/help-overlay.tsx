@@ -40,6 +40,13 @@ const SECTIONS = [
     ],
   },
   {
+    title: "Milestones",
+    bindings: [
+      ["i", "Navigate issues in detail pane"],
+      ["u", "Unlink issue from milestone"],
+    ],
+  },
+  {
     title: "Pull Requests",
     bindings: [
       ["M", "Merge selected PR"],

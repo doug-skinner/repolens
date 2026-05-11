@@ -194,7 +194,7 @@ export function App() {
       if (milestones.length === 0) {
         return <EmptyState message="No open milestones" />;
       }
-      return <MilestoneList milestones={milestones} onFilteringChange={setIsFiltering} />;
+      return <MilestoneList milestones={milestones} onFilteringChange={setIsFiltering} onMilestoneChanged={() => { refetchMs(); refetchIssues(); }} />;
     }
 
     if (activeView === "actions") {

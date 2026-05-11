@@ -159,12 +159,20 @@ export interface MilestoneIssue {
   number: number;
   title: string;
   state: string;
+  body: string;
+  labels: { name: string }[];
+  assignees: { login: string }[];
+  url: string;
 }
 
 export async function fetchMilestoneIssues(milestoneTitle: string): Promise<MilestoneIssue[]> {
   const result =
-    await $`gh issue list --milestone ${milestoneTitle} --state all --json number,title,state --limit 100`.quiet();
+    await $`gh issue list --milestone ${milestoneTitle} --state all --json number,title,state,body,labels,assignees,url --limit 100`.quiet();
   return result.json();
+}
+
+export async function setIssueMilestone(number: number, milestone: string): Promise<void> {
+  await $`gh issue edit ${number} --milestone ${milestone}`.quiet();
 }
 
 export async function openMilestoneInBrowser(url: string): Promise<void> {

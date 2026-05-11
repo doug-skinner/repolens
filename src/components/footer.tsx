@@ -10,6 +10,7 @@ const LIST_HINTS = ["/ filter", "s sort", "m mine", "d detail", "o open", "? hel
 const ACTION_HINTS = ["/ filter", "s sort", "R re-run", "d detail", "o open", "? help"];
 const ISSUE_HINTS = ["/ filter", "s sort", "m mine", "c create", "e edit", "x close", "C comment", "d detail", "o open", "? help"];
 const PR_HINTS = ["/ filter", "s sort", "m mine", "M merge", "x close", "C comment", "d detail", "o open", "? help"];
+const MILESTONE_HINTS = ["/ filter", "s sort", "d detail", "i issues", "o open", "? help"];
 const RELEASE_HINTS = ["/ filter", "s sort", "m mine", "f type", "d detail", "o open", "? help"];
 
 export function Footer({ activeView }: FooterProps) {
@@ -21,9 +22,11 @@ export function Footer({ activeView }: FooterProps) {
         ? ISSUE_HINTS
         : activeView === "prs"
           ? PR_HINTS
-          : activeView === "actions"
-            ? ACTION_HINTS
-            : LIST_HINTS;
+          : activeView === "milestones"
+            ? MILESTONE_HINTS
+            : activeView === "actions"
+              ? ACTION_HINTS
+              : LIST_HINTS;
 
   return (
     <Box paddingX={1}>
