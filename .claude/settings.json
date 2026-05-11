@@ -20,7 +20,9 @@
       "Bash(git -C /Users/dougskinner/brand/repolens log --oneline -5)",
       "Bash(git -C /Users/dougskinner/brand/repolens diff --stat)",
       "Bash(git -C /Users/dougskinner/brand/repolens log --oneline -3)",
-      "Bash(git -C /Users/dougskinner/brand/repolens add src/components/issue-form.tsx src/app.tsx src/components/footer.tsx src/components/help-overlay.tsx src/components/issue-list.tsx src/lib/gh.ts)"
+      "Bash(git -C /Users/dougskinner/brand/repolens add src/components/issue-form.tsx src/app.tsx src/components/footer.tsx src/components/help-overlay.tsx src/components/issue-list.tsx src/lib/gh.ts)",
+      "Bash(git -C /Users/dougskinner/brand/repolens diff)",
+      "Bash(git -C /Users/dougskinner/brand/repolens add src/app.tsx src/components/footer.tsx src/components/help-overlay.tsx src/components/milestone-list.tsx src/lib/gh.ts)"
     ]
   }
 }
