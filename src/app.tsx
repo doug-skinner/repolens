@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Box, Text, useInput, useApp, useStdout } from "ink";
 import Spinner from "ink-spinner";
 import { Header } from "./components/header.js";
@@ -34,6 +34,11 @@ export function App() {
   const { count: reviewRequestCount, refetch: refetchReviews } = useReviewRequests();
   const { repo } = useRepoInfo();
   const { username } = useAuthUser();
+  const initialReady = useRef(false);
+  if (!initialReady.current && !prsLoading && !issuesLoading && !msLoading && !runsLoading && !relLoading) {
+    initialReady.current = true;
+  }
+
   const [activeView, setActiveView] = useState<View>("dashboard");
   const [showHelp, setShowHelp] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -78,6 +83,15 @@ export function App() {
   });
 
   const renderView = () => {
+    if (!initialReady.current) {
+      return (
+        <Box gap={1} paddingX={1}>
+          <Spinner type="dots" />
+          <Text>Loading…</Text>
+        </Box>
+      );
+    }
+
     if (activeView === "dashboard") {
       const anyLoading = prsLoading || issuesLoading || runsLoading || msLoading || relLoading;
       return (

@@ -65,7 +65,7 @@ export function HelpOverlay({ onClose }: HelpOverlayProps) {
       </Text>
       {SECTIONS.map((section) => (
         <Box key={section.title} flexDirection="column" marginTop={1}>
-          <Text bold underline>
+          <Text bold>
             {section.title}
           </Text>
           {section.bindings.map(([key, desc]) => (

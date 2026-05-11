@@ -1,5 +1,4 @@
 import { Box, Text } from "ink";
-import Link from "ink-link";
 import { CheckBadge, ReviewBadge, SizeBadge } from "./status-badge.js";
 import { timeAgo, summarizeChecks, truncate } from "../lib/format.js";
 import type { PullRequest } from "../lib/types.js";
@@ -18,7 +17,7 @@ export function PrRow({ pr, selected, stale }: PrRowProps) {
       <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
       <Box width={6}>
         <Text dimColor>
-          <Link url={pr.url}>#{pr.number}</Link>
+          #{pr.number}
         </Text>
       </Box>
       <Box flexGrow={1}>

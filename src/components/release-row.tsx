@@ -1,5 +1,4 @@
 import { Box, Text } from "ink";
-import Link from "ink-link";
 import { timeAgo, truncate } from "../lib/format.js";
 import type { Release } from "../lib/types.js";
 
@@ -30,9 +29,7 @@ export function ReleaseRow({ release, selected, stale }: ReleaseRowProps) {
         {status ? <Text color={dim ? undefined : status.color} dimColor={dim}>{status.symbol}</Text> : <Text> </Text>}
       </Box>
       <Box width={20}>
-        <Link url={release.url}>
-          <Text bold={selected} dimColor={dim}>{truncate(release.tagName, 18)}</Text>
-        </Link>
+        <Text bold={selected} dimColor={dim}>{truncate(release.tagName, 18)}</Text>
       </Box>
       <Box flexGrow={1}>
         {detail ? (

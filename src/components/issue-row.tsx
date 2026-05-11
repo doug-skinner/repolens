@@ -1,5 +1,4 @@
 import { Box, Text } from "ink";
-import Link from "ink-link";
 import { timeAgo, truncate } from "../lib/format.js";
 import type { Issue } from "../lib/types.js";
 
@@ -20,7 +19,7 @@ export function IssueRow({ issue, selected, stale }: IssueRowProps) {
       <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
       <Box width={6}>
         <Text dimColor>
-          <Link url={issue.url}>#{issue.number}</Link>
+          #{issue.number}
         </Text>
       </Box>
       <Box flexGrow={1}>
