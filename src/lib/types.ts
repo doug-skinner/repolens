@@ -105,9 +105,17 @@ export interface WorkflowJob {
   steps: WorkflowStep[];
 }
 
+export interface Commit {
+  hash: string;
+  author: string;
+  message: string;
+  body: string;
+  date: string;
+}
+
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";
 
-export const VIEWS = ["dashboard", "prs", "issues", "actions", "milestones", "releases"] as const;
+export const VIEWS = ["dashboard", "prs", "issues", "actions", "milestones", "releases", "commits"] as const;
 export type View = (typeof VIEWS)[number];
 
 export const VIEW_LABELS: Record<View, string> = {
@@ -117,4 +125,5 @@ export const VIEW_LABELS: Record<View, string> = {
   actions: "Actions",
   milestones: "Milestones",
   releases: "Releases",
+  commits: "Commits",
 };

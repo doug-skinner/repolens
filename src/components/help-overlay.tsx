@@ -14,7 +14,7 @@ const SECTIONS = [
       ["r", "Refresh all data"],
       ["Tab", "Next view"],
       ["Shift+Tab", "Previous view"],
-      ["1–6", "Jump to view"],
+      ["1–7", "Jump to view"],
     ],
   },
   {

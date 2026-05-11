@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import type { Issue, Milestone, PullRequest, Release, RepoInfo, WorkflowJob, WorkflowRun } from "./types.js";
+import type { Commit, Issue, Milestone, PullRequest, Release, RepoInfo, WorkflowJob, WorkflowRun } from "./types.js";
 
 const PR_FIELDS = [
   "number",
@@ -255,6 +255,28 @@ export async function fetchReleases(): Promise<Release[]> {
 
 export async function openReleaseInBrowser(tagName: string): Promise<void> {
   await $`gh release view ${tagName} --web`.quiet();
+}
+
+export async function fetchCommits(): Promise<Commit[]> {
+  const SEP = "---COMMIT---";
+  const format = `${SEP}%n%H%n%an%n%s%n%b%n%aI`;
+  const result = await $`git log -30 --format=${format}`.quiet();
+  const raw = result.text().trim();
+  if (!raw) return [];
+  return raw.split(SEP).filter(Boolean).map((block) => {
+    const lines = block.trim().split("\n");
+    return {
+      hash: lines[0],
+      author: lines[1],
+      message: lines[2],
+      body: lines.slice(3, -1).join("\n").trim(),
+      date: lines[lines.length - 1],
+    };
+  });
+}
+
+export async function openCommitInBrowser(hash: string): Promise<void> {
+  await $`gh browse ${hash}`.quiet();
 }
 
 export async function fetchCollaborators(): Promise<string[]> {
