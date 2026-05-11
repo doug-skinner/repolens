@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
 import { RunRow } from "./run-row.js";
 import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
-import { openRunInBrowser, fetchRunJobs } from "../lib/gh.js";
+import { ConfirmBar } from "./confirm-bar.js";
+import { openRunInBrowser, fetchRunJobs, rerunWorkflow } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
@@ -25,6 +26,7 @@ const SORT_OPTIONS = [
 interface RunListProps {
   runs: WorkflowRun[];
   onFilteringChange?: (editing: boolean) => void;
+  onRunChanged?: () => void;
 }
 
 function jobSymbol(job: WorkflowJob): { symbol: string; color: string } {
@@ -97,9 +99,12 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
   );
 }
 
-export function RunList({ runs, onFilteringChange }: RunListProps) {
+export function RunList({ runs, onFilteringChange, onRunChanged }: RunListProps) {
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
+  const selectedIndexRef = useRef(0);
+  const [confirmRerun, setConfirmRerun] = useState<{ runId: number; name: string } | null>(null);
+  const [confirmStatus, setConfirmStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
 
   const sorted = useMemo(() => {
     let items = runs.filter((run) =>
@@ -112,13 +117,53 @@ export function RunList({ runs, onFilteringChange }: RunListProps) {
     return items;
   }, [runs, filter.filterQuery, sort.current]);
 
-  const extraKeys = useMemo(() => ({ s: sort.cycleSort }), [sort.cycleSort]);
+  const startRerun = useCallback((i: number) => {
+    const run = sorted[i];
+    if (!run) return;
+    setConfirmRerun({ runId: run.databaseId, name: run.workflowName });
+    setConfirmStatus("confirming");
+    onFilteringChange?.(true);
+  }, [sorted, onFilteringChange]);
+
+  const handleConfirm = useCallback(async () => {
+    if (!confirmRerun) return;
+    setConfirmStatus("working");
+    try {
+      await rerunWorkflow(confirmRerun.runId);
+      setConfirmStatus("success");
+      onRunChanged?.();
+      setTimeout(() => {
+        setConfirmRerun(null);
+        setConfirmStatus("confirming");
+        onFilteringChange?.(false);
+      }, 1500);
+    } catch {
+      setConfirmStatus("error");
+      setTimeout(() => {
+        setConfirmRerun(null);
+        setConfirmStatus("confirming");
+        onFilteringChange?.(false);
+      }, 2000);
+    }
+  }, [confirmRerun, onRunChanged, onFilteringChange]);
+
+  const handleCancel = useCallback(() => {
+    setConfirmRerun(null);
+    setConfirmStatus("confirming");
+    onFilteringChange?.(false);
+  }, [onFilteringChange]);
+
+  const extraKeys = useMemo(() => ({
+    s: sort.cycleSort,
+    R: () => startRerun(selectedIndexRef.current),
+  }), [sort.cycleSort, startRerun]);
 
   const onOpen = useCallback((i: number) => openRunInBrowser(sorted[i].url), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
   const onYankRef = useCallback((i: number) => copyToClipboard(String(sorted[i].databaseId)), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current, inputBlocked: !!confirmRerun });
+  selectedIndexRef.current = selectedIndex;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -128,6 +173,14 @@ export function RunList({ runs, onFilteringChange }: RunListProps) {
     <Box flexDirection="column">
       <Breadcrumb view={viewLabel} detail={showDetail && selected ? `${selected.workflowName}: ${selected.displayTitle}` : undefined} />
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={runs.length} />
+      {confirmRerun && (
+        <ConfirmBar
+          message={confirmStatus === "success" ? `Re-ran ${confirmRerun.name}` : confirmStatus === "error" ? `Failed to re-run ${confirmRerun.name}` : `Re-run "${confirmRerun.name}"?`}
+          status={confirmStatus}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
+      )}
       <Box flexDirection="column">
         {visible.map((run, i) => (
           <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} stale={isStale(run.createdAt, STALE_DAYS)} />

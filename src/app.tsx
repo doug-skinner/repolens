@@ -125,7 +125,7 @@ export function App() {
       if (prs.length === 0) {
         return <EmptyState message="No open pull requests" />;
       }
-      return <PrList prs={prs} username={username} onFilteringChange={setIsFiltering} />;
+      return <PrList prs={prs} username={username} onFilteringChange={setIsFiltering} onPrChanged={refetchPrs} />;
     }
 
     if (activeView === "issues") {
@@ -216,7 +216,7 @@ export function App() {
       if (runs.length === 0) {
         return <EmptyState message="No workflow runs" />;
       }
-      return <RunList runs={runs} onFilteringChange={setIsFiltering} />;
+      return <RunList runs={runs} onFilteringChange={setIsFiltering} onRunChanged={refetchRuns} />;
     }
 
     if (activeView === "releases") {

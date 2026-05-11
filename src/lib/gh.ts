@@ -120,6 +120,18 @@ export async function closeIssue(number: number): Promise<void> {
   await $`gh issue close ${number}`.quiet();
 }
 
+export async function mergePr(number: number): Promise<void> {
+  await $`gh pr merge ${number} --merge`.quiet();
+}
+
+export async function closePr(number: number): Promise<void> {
+  await $`gh pr close ${number}`.quiet();
+}
+
+export async function rerunWorkflow(runId: number): Promise<void> {
+  await $`gh run rerun ${runId}`.quiet();
+}
+
 export async function reopenIssue(number: number): Promise<void> {
   await $`gh issue reopen ${number}`.quiet();
 }

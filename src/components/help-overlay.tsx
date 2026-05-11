@@ -40,6 +40,19 @@ const SECTIONS = [
     ],
   },
   {
+    title: "Pull Requests",
+    bindings: [
+      ["M", "Merge selected PR"],
+      ["x", "Close selected PR"],
+    ],
+  },
+  {
+    title: "Actions",
+    bindings: [
+      ["R", "Re-run selected workflow"],
+    ],
+  },
+  {
     title: "Releases",
     bindings: [
       ["f", "Cycle type filter (All/Stable/Pre-release/Draft)"],

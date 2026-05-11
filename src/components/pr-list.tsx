@@ -5,7 +5,8 @@ import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
 import { CommentInput } from "./comment-input.js";
-import { openPrInBrowser, commentOnPr } from "../lib/gh.js";
+import { ConfirmBar } from "./confirm-bar.js";
+import { openPrInBrowser, commentOnPr, mergePr, closePr } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
@@ -27,6 +28,7 @@ interface PrListProps {
   prs: PullRequest[];
   username: string | null;
   onFilteringChange?: (editing: boolean) => void;
+  onPrChanged?: () => void;
 }
 
 function checkSymbol(status: string, conclusion: string): { symbol: string; color: string } {
@@ -75,12 +77,15 @@ function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
   );
 }
 
-export function PrList({ prs, username, onFilteringChange }: PrListProps) {
+export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrListProps) {
   const filter = useListFilter(onFilteringChange);
   const comment = useCommentInput(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
   const [mine, setMine] = useState(false);
   const commentTargetRef = useRef(0);
+  const selectedIndexRef = useRef(0);
+  const [confirm, setConfirm] = useState<{ action: "merge" | "close"; number: number; title: string } | null>(null);
+  const [confirmStatus, setConfirmStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
 
   const toggleMine = useCallback(() => setMine((v) => !v), []);
 
@@ -97,7 +102,49 @@ export function PrList({ prs, username, onFilteringChange }: PrListProps) {
     return items;
   }, [prs, filter.filterQuery, mine, username, sort.current]);
 
-  const extraKeys = useMemo(() => ({ s: sort.cycleSort, m: toggleMine }), [sort.cycleSort, toggleMine]);
+  const startAction = useCallback((action: "merge" | "close", i: number) => {
+    const pr = sorted[i];
+    if (!pr) return;
+    setConfirm({ action, number: pr.number, title: pr.title });
+    setConfirmStatus("confirming");
+    onFilteringChange?.(true);
+  }, [sorted, onFilteringChange]);
+
+  const handleConfirm = useCallback(async () => {
+    if (!confirm) return;
+    setConfirmStatus("working");
+    try {
+      if (confirm.action === "merge") await mergePr(confirm.number);
+      else await closePr(confirm.number);
+      setConfirmStatus("success");
+      onPrChanged?.();
+      setTimeout(() => {
+        setConfirm(null);
+        setConfirmStatus("confirming");
+        onFilteringChange?.(false);
+      }, 1500);
+    } catch {
+      setConfirmStatus("error");
+      setTimeout(() => {
+        setConfirm(null);
+        setConfirmStatus("confirming");
+        onFilteringChange?.(false);
+      }, 2000);
+    }
+  }, [confirm, onPrChanged, onFilteringChange]);
+
+  const handleCancel = useCallback(() => {
+    setConfirm(null);
+    setConfirmStatus("confirming");
+    onFilteringChange?.(false);
+  }, [onFilteringChange]);
+
+  const extraKeys = useMemo(() => ({
+    s: sort.cycleSort,
+    m: toggleMine,
+    M: () => startAction("merge", selectedIndexRef.current),
+    x: () => startAction("close", selectedIndexRef.current),
+  }), [sort.cycleSort, toggleMine, startAction]);
 
   const onOpen = useCallback((i: number) => openPrInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
@@ -115,7 +162,8 @@ export function PrList({ prs, username, onFilteringChange }: PrListProps) {
     }
   }, [comment.resolveSubmit, comment.rejectSubmit]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}` });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirm });
+  selectedIndexRef.current = selectedIndex;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -124,11 +172,27 @@ export function PrList({ prs, username, onFilteringChange }: PrListProps) {
   if (sort.current !== "newest") tags.push(sort.label);
   const viewLabel = tags.length > 0 ? `PRs [${tags.join(", ")}]` : "PRs";
 
+  const confirmMessage = confirm
+    ? confirmStatus === "success"
+      ? `${confirm.action === "merge" ? "Merged" : "Closed"} #${confirm.number}`
+      : confirmStatus === "error"
+        ? `Failed to ${confirm.action} #${confirm.number}`
+        : `${confirm.action === "merge" ? "Merge" : "Close"} #${confirm.number} "${confirm.title}"?`
+    : "";
+
   return (
     <Box flexDirection="column">
       <Breadcrumb view={viewLabel} detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={prs.length} />
       <CommentInput targetLabel={comment.targetLabel} text={comment.commentText} isEditing={comment.isEditing} status={comment.status} />
+      {confirm && (
+        <ConfirmBar
+          message={confirmMessage}
+          status={confirmStatus}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
+      )}
       <Box flexDirection="column">
         {visible.map((pr, i) => (
           <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} stale={isStale(pr.createdAt, STALE_DAYS)} />
