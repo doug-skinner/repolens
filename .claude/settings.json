@@ -26,7 +26,11 @@
       "Bash(xargs ls -la)",
       "Bash(npm uninstall *)",
       "Bash(git -C /Users/dougskinner/brand/repolens add package.json package-lock.json src/app.tsx src/components/comment-input.tsx src/components/confirm-bar.tsx src/components/dashboard.tsx src/components/issue-form.tsx src/components/merge-bar.tsx src/components/milestone-list.tsx src/components/picker-overlay.tsx src/components/run-list.tsx src/components/status-badge.tsx)",
-      "Bash(git -C /Users/dougskinner/brand/repolens commit -m ' *)"
+      "Bash(git -C /Users/dougskinner/brand/repolens commit -m ' *)",
+      "Bash(git -C /Users/dougskinner/brand/repolens status --porcelain)",
+      "Bash(git -C /Users/dougskinner/brand/repolens branch --show-current)",
+      "Bash(git -C /Users/dougskinner/brand/repolens fetch origin main)",
+      "Bash(git -C /Users/dougskinner/brand/repolens status -sb)"
     ]
   }
 }
