@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Box, Text } from "ink";
-import Spinner from "ink-spinner";
 import { RunRow } from "./run-row.js";
 import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
@@ -69,7 +68,7 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
       </Box>
       {loading ? (
         <Box gap={1}>
-          <Spinner type="dots" />
+          <Text>⏳</Text>
           <Text dimColor>Loading jobs…</Text>
         </Box>
       ) : jobs && jobs.length > 0 ? (

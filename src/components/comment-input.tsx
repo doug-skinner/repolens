@@ -1,5 +1,4 @@
 import { Box, Text } from "ink";
-import Spinner from "ink-spinner";
 import { useTheme } from "../lib/config-context.js";
 
 interface CommentInputProps {
@@ -17,7 +16,7 @@ export function CommentInput({ targetLabel, text, isEditing, status }: CommentIn
   if (status === "submitting") {
     return (
       <Box paddingX={1} gap={1}>
-        <Spinner type="dots" />
+        <Text>⏳</Text>
         <Text>Posting comment on {targetLabel}…</Text>
       </Box>
     );

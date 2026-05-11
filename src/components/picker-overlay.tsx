@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
-import Spinner from "ink-spinner";
 import { useTheme } from "../lib/config-context.js";
 
 const VIEWPORT_SIZE = 8;
@@ -61,7 +60,7 @@ export function PickerOverlay({ title, options, selected: initial, loading, onCo
   if (loading) {
     return (
       <Box paddingX={1} gap={1}>
-        <Spinner type="dots" />
+        <Text>⏳</Text>
         <Text dimColor>Loading {title.toLowerCase()}…</Text>
       </Box>
     );
@@ -78,7 +77,7 @@ export function PickerOverlay({ title, options, selected: initial, loading, onCo
   if (status === "saving") {
     return (
       <Box paddingX={1} gap={1}>
-        <Spinner type="dots" />
+        <Text>⏳</Text>
         <Text>Saving {title.toLowerCase()}…</Text>
       </Box>
     );

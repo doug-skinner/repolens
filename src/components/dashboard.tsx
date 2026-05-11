@@ -1,5 +1,4 @@
 import { Box, Text } from "ink";
-import Spinner from "ink-spinner";
 import { timeAgo, truncate } from "../lib/format.js";
 import { useConfig, useTheme } from "../lib/config-context.js";
 import type { DashboardSection } from "../lib/config.js";
@@ -162,7 +161,7 @@ export function Dashboard({ prs, issues, runs, milestones, releases, loading }: 
   if (loading && prs.length === 0 && issues.length === 0) {
     return (
       <Box gap={1} paddingX={1}>
-        <Spinner type="dots" />
+        <Text>⏳</Text>
         <Text>Loading dashboard…</Text>
       </Box>
     );

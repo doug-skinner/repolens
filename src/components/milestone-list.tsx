@@ -1,6 +1,5 @@
 import { useCallback, useState, useEffect, useMemo, useRef } from "react";
 import { Box, Text, useInput } from "ink";
-import Spinner from "ink-spinner";
 import { MilestoneRow } from "./milestone-row.js";
 import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
@@ -165,7 +164,7 @@ function MilestoneDetail({
       )}
       {loading ? (
         <Box gap={1}>
-          <Spinner type="dots" />
+          <Text>⏳</Text>
           <Text dimColor>Loading issues…</Text>
         </Box>
       ) : issues && issues.length > 0 ? (

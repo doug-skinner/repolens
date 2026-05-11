@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
-import Spinner from "ink-spinner";
 import { fetchLabels, createIssue, editIssue } from "../lib/gh.js";
 import { useTheme } from "../lib/config-context.js";
 import type { Issue, Milestone } from "../lib/types.js";
@@ -169,7 +168,7 @@ export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormPr
       <Box flexDirection="column" borderStyle="round" borderColor={theme.accent} paddingX={2} paddingY={1}>
         <Text bold color={theme.accent}>{formTitle}</Text>
         <Box gap={1} marginTop={1}>
-          <Spinner type="dots" />
+          <Text>⏳</Text>
           <Text>{isEdit ? "Updating" : "Creating"} issue…</Text>
         </Box>
       </Box>
@@ -203,7 +202,7 @@ export function IssueForm({ milestones, issue, onClose, onCreated }: IssueFormPr
         {focusedIndex === 2 &&
           (labelsLoading ? (
             <Box paddingLeft={2} gap={1}>
-              <Spinner type="dots" />
+              <Text>⏳</Text>
               <Text dimColor>Loading labels…</Text>
             </Box>
           ) : repoLabels.length === 0 ? (

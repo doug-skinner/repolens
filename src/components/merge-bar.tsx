@@ -1,5 +1,4 @@
 import { Box, Text, useInput } from "ink";
-import Spinner from "ink-spinner";
 import { useTheme } from "../lib/config-context.js";
 
 export type MergeStrategy = "merge" | "squash" | "rebase";
@@ -26,7 +25,7 @@ export function MergeBar({ prNumber, prTitle, status, onSelect, onCancel }: Merg
   if (status === "working") {
     return (
       <Box paddingX={1} gap={1}>
-        <Spinner type="dots" />
+        <Text>⏳</Text>
         <Text>Merging #{prNumber}…</Text>
       </Box>
     );

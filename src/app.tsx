@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef } from "react";
 import { Box, Text, useInput, useApp, useStdout } from "ink";
-import Spinner from "ink-spinner";
 import { Header } from "./components/header.js";
 import { Dashboard } from "./components/dashboard.js";
 import { PrList } from "./components/pr-list.js";
@@ -86,7 +85,7 @@ export function App() {
     if (!initialReady.current) {
       return (
         <Box gap={1} paddingX={1}>
-          <Spinner type="dots" />
+          <Text>⏳</Text>
           <Text>Loading…</Text>
         </Box>
       );
@@ -110,7 +109,7 @@ export function App() {
       if (prsLoading) {
         return (
           <Box gap={1} paddingX={1}>
-            <Spinner type="dots" />
+            <Text>⏳</Text>
             <Text>Loading pull requests…</Text>
           </Box>
         );
@@ -157,7 +156,7 @@ export function App() {
       if (issuesLoading) {
         return (
           <Box gap={1} paddingX={1}>
-            <Spinner type="dots" />
+            <Text>⏳</Text>
             <Text>Loading issues…</Text>
           </Box>
         );
@@ -179,7 +178,7 @@ export function App() {
       if (msLoading) {
         return (
           <Box gap={1} paddingX={1}>
-            <Spinner type="dots" />
+            <Text>⏳</Text>
             <Text>Loading milestones…</Text>
           </Box>
         );
@@ -201,7 +200,7 @@ export function App() {
       if (runsLoading) {
         return (
           <Box gap={1} paddingX={1}>
-            <Spinner type="dots" />
+            <Text>⏳</Text>
             <Text>Loading workflow runs…</Text>
           </Box>
         );
@@ -223,7 +222,7 @@ export function App() {
       if (relLoading) {
         return (
           <Box gap={1} paddingX={1}>
-            <Spinner type="dots" />
+            <Text>⏳</Text>
             <Text>Loading releases…</Text>
           </Box>
         );

@@ -1,5 +1,4 @@
 import { Box, Text, useInput } from "ink";
-import Spinner from "ink-spinner";
 import { useTheme } from "../lib/config-context.js";
 
 interface ConfirmBarProps {
@@ -21,7 +20,7 @@ export function ConfirmBar({ message, status, onConfirm, onCancel }: ConfirmBarP
   if (status === "working") {
     return (
       <Box paddingX={1} gap={1}>
-        <Spinner type="dots" />
+        <Text>⏳</Text>
         <Text>{message}</Text>
       </Box>
     );

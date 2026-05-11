@@ -1,5 +1,4 @@
 import { Text } from "ink";
-import Spinner from "ink-spinner";
 import { useTheme } from "../lib/config-context.js";
 import type { ThemeColors } from "../lib/config.js";
 import type { CheckSummary } from "../lib/types.js";
@@ -8,7 +7,7 @@ function checkBadge(summary: CheckSummary, theme: ThemeColors): React.JSX.Elemen
   switch (summary) {
     case "pass": return <Text color={theme.success}>✓ checks</Text>;
     case "fail": return <Text color={theme.error}>✗ checks</Text>;
-    case "running": return <Text color={theme.warning}><Spinner type="dots" /> checks</Text>;
+    case "running": return <Text color={theme.warning}>⏳ checks</Text>;
     case "pending": return <Text color={theme.warning}>○ checks</Text>;
     case "none": return <Text dimColor>— checks</Text>;
   }
