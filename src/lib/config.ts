@@ -8,6 +8,7 @@ export type RunColumn = "status" | "workflow" | "title" | "branch" | "time";
 export type MilestoneColumn = "title" | "due" | "progress" | "percent";
 export type ReleaseColumn = "status" | "tag" | "detail" | "author" | "downloads" | "time";
 export type CommitColumn = "hash" | "message" | "author" | "time";
+export type NotificationColumn = "status" | "type" | "title" | "reason" | "time";
 
 export type DashboardSection = "prs" | "issues" | "actions" | "milestones" | "releases";
 export type MilestoneSortKey = "version" | "due" | "progress" | "title";
@@ -39,6 +40,7 @@ export interface RepolensConfig {
     milestones: Record<MilestoneColumn, boolean>;
     releases: Record<ReleaseColumn, boolean>;
     commits: Record<CommitColumn, boolean>;
+    notifications: Record<NotificationColumn, boolean>;
   };
   dashboard: {
     sections: DashboardSection[];
@@ -57,6 +59,7 @@ export const DEFAULT_CONFIG: RepolensConfig = {
     milestones: { title: true, due: true, progress: true, percent: true },
     releases: { status: true, tag: true, detail: true, author: true, downloads: true, time: true },
     commits: { hash: true, message: true, author: true, time: true },
+    notifications: { status: true, type: true, title: true, reason: true, time: true },
   },
   dashboard: {
     sections: ["prs", "issues", "actions", "milestones", "releases"],
@@ -100,6 +103,7 @@ function enforceSafetyRails(config: RepolensConfig): void {
   config.columns.milestones.title = true;
   config.columns.releases.tag = true;
   config.columns.commits.message = true;
+  config.columns.notifications.title = true;
 }
 
 function resolveConfigPath(): string | null {

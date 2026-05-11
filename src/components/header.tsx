@@ -8,11 +8,12 @@ interface HeaderProps {
   prCount: number;
   issueCount: number;
   reviewRequestCount: number;
+  unreadNotificationCount: number;
   activeView: View;
   lastRefreshedAt: Date | null;
 }
 
-export function Header({ repo, prCount, issueCount, reviewRequestCount, activeView, lastRefreshedAt }: HeaderProps) {
+export function Header({ repo, prCount, issueCount, reviewRequestCount, unreadNotificationCount, activeView, lastRefreshedAt }: HeaderProps) {
   const theme = useTheme();
 
   return (
@@ -35,6 +36,9 @@ export function Header({ repo, prCount, issueCount, reviewRequestCount, activeVi
           {prCount} PR{prCount !== 1 ? "s" : ""} · {issueCount} issue{issueCount !== 1 ? "s" : ""}
           {reviewRequestCount > 0 && (
             <Text color={theme.info}> · {reviewRequestCount} review{reviewRequestCount !== 1 ? "s" : ""}</Text>
+          )}
+          {unreadNotificationCount > 0 && (
+            <Text color={theme.warning}> · {unreadNotificationCount} unread</Text>
           )}
         </Text>
         <Box flexGrow={1} />

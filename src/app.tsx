@@ -9,6 +9,7 @@ import { MilestoneList } from "./components/milestone-list.js";
 import { RunList } from "./components/run-list.js";
 import { ReleaseList } from "./components/release-list.js";
 import { CommitList } from "./components/commit-list.js";
+import { NotificationList } from "./components/notification-list.js";
 import { EmptyState } from "./components/empty-state.js";
 import { HelpOverlay } from "./components/help-overlay.js";
 import { Footer } from "./components/footer.js";
@@ -18,6 +19,7 @@ import { useMilestones } from "./hooks/use-milestones.js";
 import { useWorkflowRuns } from "./hooks/use-workflow-runs.js";
 import { useReleases } from "./hooks/use-releases.js";
 import { useCommits } from "./hooks/use-commits.js";
+import { useNotifications } from "./hooks/use-notifications.js";
 import { useReviewRequests } from "./hooks/use-review-requests.js";
 import { useRepoInfo } from "./hooks/use-repo-info.js";
 import { useAuthUser } from "./hooks/use-auth-user.js";
@@ -33,11 +35,12 @@ export function App() {
   const { runs, loading: runsLoading, error: runsError, refetch: refetchRuns } = useWorkflowRuns();
   const { releases, loading: relLoading, error: relError, refetch: refetchRel } = useReleases();
   const { commits, loading: commitsLoading, error: commitsError, refetch: refetchCommits } = useCommits();
+  const { notifications, loading: notifLoading, error: notifError, refetch: refetchNotif } = useNotifications();
   const { count: reviewRequestCount, refetch: refetchReviews } = useReviewRequests();
   const { repo } = useRepoInfo();
   const { username } = useAuthUser();
   const initialReady = useRef(false);
-  if (!initialReady.current && !prsLoading && !issuesLoading && !msLoading && !runsLoading && !relLoading && !commitsLoading) {
+  if (!initialReady.current && !prsLoading && !issuesLoading && !msLoading && !runsLoading && !relLoading && !commitsLoading && !notifLoading) {
     initialReady.current = true;
   }
 
@@ -54,8 +57,9 @@ export function App() {
     refetchRuns();
     refetchRel();
     refetchCommits();
+    refetchNotif();
     refetchReviews();
-  }, [refetchPrs, refetchIssues, refetchMs, refetchRuns, refetchRel, refetchCommits, refetchReviews]);
+  }, [refetchPrs, refetchIssues, refetchMs, refetchRuns, refetchRel, refetchCommits, refetchNotif, refetchReviews]);
 
   const { lastRefreshedAt, refreshNow } = useAutoRefresh({ refetch: refetchAll, paused: showHelp });
 
@@ -266,12 +270,34 @@ export function App() {
       return <CommitList commits={commits} username={username} onFilteringChange={setIsFiltering} />;
     }
 
+    if (activeView === "notifications") {
+      if (notifLoading) {
+        return (
+          <Box gap={1} paddingX={1}>
+            <Text>⏳</Text>
+            <Text>Loading notifications…</Text>
+          </Box>
+        );
+      }
+      if (notifError) {
+        return (
+          <Box paddingX={1}>
+            <Text color="red">{notifError}</Text>
+          </Box>
+        );
+      }
+      if (notifications.length === 0) {
+        return <EmptyState message="No notifications" />;
+      }
+      return <NotificationList notifications={notifications} onFilteringChange={setIsFiltering} onNotificationChanged={refetchNotif} />;
+    }
+
     return null;
   };
 
   return (
     <Box flexDirection="column" paddingX={1} height={stdout?.rows}>
-      {initialReady.current && <Header repo={repo} prCount={prs.length} issueCount={issues.length} reviewRequestCount={reviewRequestCount} activeView={activeView} lastRefreshedAt={lastRefreshedAt} />}
+      {initialReady.current && <Header repo={repo} prCount={prs.length} issueCount={issues.length} reviewRequestCount={reviewRequestCount} unreadNotificationCount={notifications.filter((n) => n.unread).length} activeView={activeView} lastRefreshedAt={lastRefreshedAt} />}
       <Box marginTop={1} flexDirection="column" flexGrow={1} overflow="hidden">
         {showHelp ? <HelpOverlay onClose={() => setShowHelp(false)} /> : renderView()}
       </Box>

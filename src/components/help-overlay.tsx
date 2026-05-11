@@ -14,7 +14,7 @@ const SECTIONS = [
       ["r", "Refresh all data"],
       ["Tab", "Next view"],
       ["Shift+Tab", "Previous view"],
-      ["1–7", "Jump to view"],
+      ["1–8", "Jump to view"],
     ],
   },
   {
@@ -72,6 +72,13 @@ const SECTIONS = [
     title: "Releases",
     bindings: [
       ["f", "Cycle type filter (All/Stable/Pre-release/Draft)"],
+    ],
+  },
+  {
+    title: "Notifications",
+    bindings: [
+      ["n", "Mark selected as read"],
+      ["u", "Toggle unread-only filter"],
     ],
   },
 ];

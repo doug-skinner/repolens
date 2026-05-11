@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import type { Commit, Issue, Milestone, PullRequest, Release, RepoInfo, WorkflowJob, WorkflowRun } from "./types.js";
+import type { Commit, GitHubNotification, Issue, Milestone, PullRequest, Release, RepoInfo, WorkflowJob, WorkflowRun } from "./types.js";
 
 const PR_FIELDS = [
   "number",
@@ -277,6 +277,36 @@ export async function fetchCommits(): Promise<Commit[]> {
 
 export async function openCommitInBrowser(hash: string): Promise<void> {
   await $`gh browse ${hash}`.quiet();
+}
+
+interface RawNotification {
+  id: string;
+  unread: boolean;
+  reason: string;
+  subject: {
+    title: string;
+    type: string;
+    url: string | null;
+  };
+  updated_at: string;
+}
+
+export async function fetchNotifications(): Promise<GitHubNotification[]> {
+  const result = await $`gh api repos/{owner}/{repo}/notifications?per_page=50`.quiet();
+  const raw: RawNotification[] = JSON.parse(result.text());
+  return raw.map((n) => ({
+    id: n.id,
+    unread: n.unread,
+    reason: n.reason,
+    title: n.subject.title,
+    type: n.subject.type,
+    updatedAt: n.updated_at,
+    url: n.subject.url,
+  }));
+}
+
+export async function markNotificationRead(threadId: string): Promise<void> {
+  await $`gh api notifications/threads/${threadId} -X PATCH`.quiet();
 }
 
 export async function fetchCollaborators(): Promise<string[]> {
