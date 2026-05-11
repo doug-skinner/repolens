@@ -6,15 +6,18 @@ import type { PullRequest } from "../lib/types.js";
 interface PrRowProps {
   pr: PullRequest;
   selected: boolean;
+  marked?: boolean;
   stale?: boolean;
 }
 
-export function PrRow({ pr, selected, stale }: PrRowProps) {
+export function PrRow({ pr, selected, marked, stale }: PrRowProps) {
   const dim = stale && !selected;
+
+  const indicator = selected ? "▸" : marked ? "●" : " ";
 
   return (
     <Box gap={1}>
-      <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
+      <Text color={selected ? "cyan" : marked ? "magenta" : undefined}>{indicator}</Text>
       <Box width={6}>
         <Text dimColor>
           #{pr.number}

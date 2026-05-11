@@ -11,6 +11,7 @@ interface ListNavigationOptions {
   onOpen: (index: number) => void;
   onYank?: (index: number) => void;
   onYankRef?: (index: number) => void;
+  onToggleMark?: (index: number) => void;
   onStartComment?: (index: number) => void;
   onCommentSubmit?: (text: string) => void;
   filter?: ListFilter;
@@ -21,7 +22,7 @@ interface ListNavigationOptions {
 }
 
 export function useListNavigation(length: number, options: ListNavigationOptions) {
-  const { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys } = options;
+  const { onOpen, onYank, onYankRef, onToggleMark, onStartComment, onCommentSubmit, filter, comment, extraKeys } = options;
   const { stdout } = useStdout();
   const filterBarVisible = filter ? (filter.isEditing || !!filter.filterQuery) : false;
   const commentBarVisible = comment ? (comment.isEditing || comment.status !== "idle") : false;
@@ -102,6 +103,12 @@ export function useListNavigation(length: number, options: ListNavigationOptions
     if (key.escape && filter?.filterQuery) {
       clearPendingG();
       filter.clearFilter();
+      return;
+    }
+
+    if (input === " " && onToggleMark) {
+      clearPendingG();
+      onToggleMark(selectedIndex);
       return;
     }
 

@@ -5,18 +5,21 @@ import type { Issue } from "../lib/types.js";
 interface IssueRowProps {
   issue: Issue;
   selected: boolean;
+  marked?: boolean;
   stale?: boolean;
 }
 
-export function IssueRow({ issue, selected, stale }: IssueRowProps) {
+export function IssueRow({ issue, selected, marked, stale }: IssueRowProps) {
   const dim = stale && !selected;
   const labelText = issue.labels
     .map((l) => l.name)
     .join(", ");
 
+  const indicator = selected ? "▸" : marked ? "●" : " ";
+
   return (
     <Box gap={1}>
-      <Text color={selected ? "cyan" : undefined}>{selected ? "▸" : " "}</Text>
+      <Text color={selected ? "cyan" : marked ? "magenta" : undefined}>{indicator}</Text>
       <Box width={6}>
         <Text dimColor>
           #{issue.number}

@@ -87,10 +87,11 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
   const [mine, setMine] = useState(false);
   const commentTargetRef = useRef(0);
   const selectedIndexRef = useRef(0);
-  const [confirmClose, setConfirmClose] = useState<{ number: number; title: string } | null>(null);
+  const [markedNumbers, setMarkedNumbers] = useState<Set<number>>(new Set());
+  const [confirmClose, setConfirmClose] = useState<{ numbers: number[]; title: string } | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
 
-  const [picker, setPicker] = useState<{ kind: "labels" | "assignees"; number: number; current: Set<string> } | null>(null);
+  const [picker, setPicker] = useState<{ kind: "labels" | "assignees"; targets: number[]; current: Set<string> } | null>(null);
   const [pickerOptions, setPickerOptions] = useState<string[]>([]);
   const [pickerLoading, setPickerLoading] = useState(false);
 
@@ -109,30 +110,51 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
     return items;
   }, [issues, filter.filterQuery, mine, username, sort.current]);
 
+  const onToggleMark = useCallback((i: number) => {
+    const num = sorted[i]?.number;
+    if (num == null) return;
+    setMarkedNumbers((prev) => {
+      const next = new Set(prev);
+      if (next.has(num)) next.delete(num); else next.add(num);
+      return next;
+    });
+  }, [sorted]);
+
+  const getTargets = useCallback((i: number): number[] => {
+    if (markedNumbers.size > 0) return [...markedNumbers];
+    const num = sorted[i]?.number;
+    return num != null ? [num] : [];
+  }, [sorted, markedNumbers]);
+
   const openPicker = useCallback((kind: "labels" | "assignees", i: number) => {
-    const issue = sorted[i];
-    if (!issue) return;
-    const current = kind === "labels"
-      ? new Set(issue.labels.map((l) => l.name))
-      : new Set(issue.assignees.map((a) => a.login));
-    setPicker({ kind, number: issue.number, current });
+    const targets = getTargets(i);
+    if (targets.length === 0) return;
+    const bulk = targets.length > 1;
+    const current = bulk
+      ? new Set<string>()
+      : kind === "labels"
+        ? new Set(sorted[i].labels.map((l) => l.name))
+        : new Set(sorted[i].assignees.map((a) => a.login));
+    setPicker({ kind, targets, current });
     setPickerLoading(true);
     onFilteringChange?.(true);
     const fetch = kind === "labels" ? fetchLabels() : fetchCollaborators();
     fetch.then((opts) => { setPickerOptions(opts); setPickerLoading(false); })
       .catch(() => { setPickerOptions([]); setPickerLoading(false); });
-  }, [sorted, onFilteringChange]);
+  }, [sorted, getTargets, onFilteringChange]);
 
   const handlePickerConfirm = useCallback(async (selected: Set<string>) => {
     if (!picker) return;
-    const { kind, number, current } = picker;
-    const add = [...selected].filter((s) => !current.has(s));
-    const remove = [...current].filter((s) => !selected.has(s));
+    const { kind, targets, current } = picker;
+    const bulk = targets.length > 1;
+    const add = bulk ? [...selected] : [...selected].filter((s) => !current.has(s));
+    const remove = bulk ? [] : [...current].filter((s) => !selected.has(s));
     try {
-      if (kind === "labels") await setIssueLabels(number, add, remove);
-      else await setIssueAssignees(number, add, remove);
+      const fn = kind === "labels" ? setIssueLabels : setIssueAssignees;
+      await Promise.all(targets.map((n) => fn(n, add, remove)));
       onIssueChanged?.();
     } catch { /* silently fail */ }
+    if (bulk) setMarkedNumbers(new Set());
     setPicker(null);
     onFilteringChange?.(false);
   }, [picker, onIssueChanged, onFilteringChange]);
@@ -143,20 +165,24 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
   }, [onFilteringChange]);
 
   const startClose = useCallback((i: number) => {
-    const issue = sorted[i];
-    if (!issue) return;
-    setConfirmClose({ number: issue.number, title: issue.title });
+    const targets = getTargets(i);
+    if (targets.length === 0) return;
+    const title = targets.length === 1
+      ? `#${targets[0]} "${sorted.find((s) => s.number === targets[0])?.title ?? ""}"`
+      : `${targets.length} issues`;
+    setConfirmClose({ numbers: targets, title });
     setConfirmStatus("confirming");
     onFilteringChange?.(true);
-  }, [sorted, onFilteringChange]);
+  }, [sorted, getTargets, onFilteringChange]);
 
   const handleConfirm = useCallback(async () => {
     if (!confirmClose) return;
     setConfirmStatus("working");
     try {
-      await closeIssue(confirmClose.number);
+      await Promise.all(confirmClose.numbers.map((n) => closeIssue(n)));
       setConfirmStatus("success");
       onIssueChanged?.();
+      if (confirmClose.numbers.length > 1) setMarkedNumbers(new Set());
       setTimeout(() => {
         setConfirmClose(null);
         setConfirmStatus("confirming");
@@ -204,12 +230,13 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
     }
   }, [comment.resolveSubmit, comment.rejectSubmit]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirmClose || !!picker });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onToggleMark, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirmClose || !!picker });
   selectedIndexRef.current = selectedIndex;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
   const tags: string[] = [];
+  if (markedNumbers.size > 0) tags.push(`${markedNumbers.size} marked`);
   if (mine) tags.push("Mine");
   if (sort.current !== "newest") tags.push(sort.label);
   const viewLabel = tags.length > 0 ? `Issues [${tags.join(", ")}]` : "Issues";
@@ -231,7 +258,7 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
       )}
       {confirmClose && (
         <ConfirmBar
-          message={confirmStatus === "success" ? `Closed #${confirmClose.number}` : confirmStatus === "error" ? `Failed to close #${confirmClose.number}` : `Close #${confirmClose.number} "${confirmClose.title}"?`}
+          message={confirmStatus === "success" ? `Closed ${confirmClose.title}` : confirmStatus === "error" ? `Failed to close ${confirmClose.title}` : `Close ${confirmClose.title}?`}
           status={confirmStatus}
           onConfirm={handleConfirm}
           onCancel={handleCancelClose}
@@ -239,7 +266,7 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
       )}
       <Box flexDirection="column">
         {visible.map((issue, i) => (
-          <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} stale={isStale(issue.createdAt, STALE_DAYS)} />
+          <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} marked={markedNumbers.has(issue.number)} stale={isStale(issue.createdAt, STALE_DAYS)} />
         ))}
       </Box>
       {showDetail && selected && (

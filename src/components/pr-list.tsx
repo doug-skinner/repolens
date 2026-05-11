@@ -92,13 +92,14 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
   const [mine, setMine] = useState(false);
   const commentTargetRef = useRef(0);
   const selectedIndexRef = useRef(0);
-  const [confirm, setConfirm] = useState<{ action: "close" | "approve"; number: number; title: string } | null>(null);
+  const [markedNumbers, setMarkedNumbers] = useState<Set<number>>(new Set());
+  const [confirm, setConfirm] = useState<{ action: "close" | "approve"; numbers: number[]; title: string } | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<"confirming" | "working" | "success" | "error">("confirming");
   const [merge, setMerge] = useState<{ number: number; title: string } | null>(null);
   const [mergeStatus, setMergeStatus] = useState<"choosing" | "working" | "success" | "error">("choosing");
   const commentModeRef = useRef<"comment" | "request-changes">("comment");
 
-  const [picker, setPicker] = useState<{ kind: "labels" | "assignees"; number: number; current: Set<string> } | null>(null);
+  const [picker, setPicker] = useState<{ kind: "labels" | "assignees"; targets: number[]; current: Set<string> } | null>(null);
   const [pickerOptions, setPickerOptions] = useState<string[]>([]);
   const [pickerLoading, setPickerLoading] = useState(false);
 
@@ -117,30 +118,51 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
     return items;
   }, [prs, filter.filterQuery, mine, username, sort.current]);
 
+  const onToggleMark = useCallback((i: number) => {
+    const num = sorted[i]?.number;
+    if (num == null) return;
+    setMarkedNumbers((prev) => {
+      const next = new Set(prev);
+      if (next.has(num)) next.delete(num); else next.add(num);
+      return next;
+    });
+  }, [sorted]);
+
+  const getTargets = useCallback((i: number): number[] => {
+    if (markedNumbers.size > 0) return [...markedNumbers];
+    const num = sorted[i]?.number;
+    return num != null ? [num] : [];
+  }, [sorted, markedNumbers]);
+
   const openPicker = useCallback((kind: "labels" | "assignees", i: number) => {
-    const pr = sorted[i];
-    if (!pr) return;
-    const current = kind === "labels"
-      ? new Set(pr.labels.map((l) => l.name))
-      : new Set(pr.assignees.map((a) => a.login));
-    setPicker({ kind, number: pr.number, current });
+    const targets = getTargets(i);
+    if (targets.length === 0) return;
+    const bulk = targets.length > 1;
+    const current = bulk
+      ? new Set<string>()
+      : kind === "labels"
+        ? new Set(sorted[i].labels.map((l) => l.name))
+        : new Set(sorted[i].assignees.map((a) => a.login));
+    setPicker({ kind, targets, current });
     setPickerLoading(true);
     onFilteringChange?.(true);
     const fetch = kind === "labels" ? fetchLabels() : fetchCollaborators();
     fetch.then((opts) => { setPickerOptions(opts); setPickerLoading(false); })
       .catch(() => { setPickerOptions([]); setPickerLoading(false); });
-  }, [sorted, onFilteringChange]);
+  }, [sorted, getTargets, onFilteringChange]);
 
   const handlePickerConfirm = useCallback(async (selected: Set<string>) => {
     if (!picker) return;
-    const { kind, number, current } = picker;
-    const add = [...selected].filter((s) => !current.has(s));
-    const remove = [...current].filter((s) => !selected.has(s));
+    const { kind, targets, current } = picker;
+    const bulk = targets.length > 1;
+    const add = bulk ? [...selected] : [...selected].filter((s) => !current.has(s));
+    const remove = bulk ? [] : [...current].filter((s) => !selected.has(s));
     try {
-      if (kind === "labels") await setPrLabels(number, add, remove);
-      else await setPrAssignees(number, add, remove);
+      const fn = kind === "labels" ? setPrLabels : setPrAssignees;
+      await Promise.all(targets.map((n) => fn(n, add, remove)));
       onPrChanged?.();
     } catch { /* silently fail */ }
+    if (bulk) setMarkedNumbers(new Set());
     setPicker(null);
     onFilteringChange?.(false);
   }, [picker, onPrChanged, onFilteringChange]);
@@ -151,21 +173,25 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
   }, [onFilteringChange]);
 
   const startConfirm = useCallback((action: "close" | "approve", i: number) => {
-    const pr = sorted[i];
-    if (!pr) return;
-    setConfirm({ action, number: pr.number, title: pr.title });
+    const targets = getTargets(i);
+    if (targets.length === 0) return;
+    const title = targets.length === 1
+      ? `#${targets[0]} "${sorted.find((s) => s.number === targets[0])?.title ?? ""}"`
+      : `${targets.length} PRs`;
+    setConfirm({ action, numbers: targets, title });
     setConfirmStatus("confirming");
     onFilteringChange?.(true);
-  }, [sorted, onFilteringChange]);
+  }, [sorted, getTargets, onFilteringChange]);
 
   const handleConfirm = useCallback(async () => {
     if (!confirm) return;
     setConfirmStatus("working");
     try {
-      if (confirm.action === "approve") await approvePr(confirm.number);
-      else await closePr(confirm.number);
+      const fn = confirm.action === "approve" ? approvePr : closePr;
+      await Promise.all(confirm.numbers.map((n) => fn(n)));
       setConfirmStatus("success");
       onPrChanged?.();
+      if (confirm.numbers.length > 1) setMarkedNumbers(new Set());
       setTimeout(() => {
         setConfirm(null);
         setConfirmStatus("confirming");
@@ -264,12 +290,13 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
     }
   }, [comment.resolveSubmit, comment.rejectSubmit, onPrChanged]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
-    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirm || !!merge || !!picker });
+    useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onToggleMark, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirm || !!merge || !!picker });
   selectedIndexRef.current = selectedIndex;
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
   const tags: string[] = [];
+  if (markedNumbers.size > 0) tags.push(`${markedNumbers.size} marked`);
   if (mine) tags.push("Mine");
   if (sort.current !== "newest") tags.push(sort.label);
   const viewLabel = tags.length > 0 ? `PRs [${tags.join(", ")}]` : "PRs";
@@ -278,10 +305,10 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
   const confirmPast = confirm?.action === "approve" ? "Approved" : "Closed";
   const confirmMessage = confirm
     ? confirmStatus === "success"
-      ? `${confirmPast} #${confirm.number}`
+      ? `${confirmPast} ${confirm.title}`
       : confirmStatus === "error"
-        ? `Failed to ${confirmLabel.toLowerCase()} #${confirm.number}`
-        : `${confirmLabel} #${confirm.number} "${confirm.title}"?`
+        ? `Failed to ${confirmLabel.toLowerCase()} ${confirm.title}`
+        : `${confirmLabel} ${confirm.title}?`
     : "";
 
   return (
@@ -318,7 +345,7 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
       )}
       <Box flexDirection="column">
         {visible.map((pr, i) => (
-          <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} stale={isStale(pr.createdAt, STALE_DAYS)} />
+          <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} marked={markedNumbers.has(pr.number)} stale={isStale(pr.createdAt, STALE_DAYS)} />
         ))}
       </Box>
       {showDetail && selected && (

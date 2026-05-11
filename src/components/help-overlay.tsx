@@ -26,6 +26,7 @@ const SECTIONS = [
       ["m", "Toggle My stuff filter"],
       ["Enter", "Confirm filter / toggle detail"],
       ["Esc", "Clear filter"],
+      ["Space", "Mark / unmark item"],
       ["C", "Comment on selected item"],
       ["d", "Toggle detail pane"],
       ["o", "Open in browser"],
