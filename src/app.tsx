@@ -135,7 +135,7 @@ export function App() {
         );
       }
       if (prs.length === 0) {
-        return <EmptyState message="No open pull requests" />;
+        return <EmptyState message="No open pull requests" hint="r to refresh · / to filter · ? for help" />;
       }
       return <PrList prs={prs} username={username} onFilteringChange={setIsFiltering} onPrChanged={refetchPrs} loadMore={loadMorePrs} hasMore={hasMorePrs} loadingMore={loadingMorePrs} />;
     }
@@ -182,7 +182,7 @@ export function App() {
         );
       }
       if (issues.length === 0) {
-        return <EmptyState message="No open issues" />;
+        return <EmptyState message="No open issues" hint="r to refresh · / to filter · c to create" />;
       }
       return <IssueList issues={issues} username={username} onFilteringChange={setIsFiltering} onCreateIssue={() => setIsCreatingIssue(true)} onEditIssue={setEditingIssue} onIssueChanged={refetchIssues} loadMore={loadMoreIssues} hasMore={hasMoreIssues} loadingMore={loadingMoreIssues} />;
     }
@@ -204,7 +204,7 @@ export function App() {
         );
       }
       if (milestones.length === 0) {
-        return <EmptyState message="No open milestones" />;
+        return <EmptyState message="No open milestones" hint="r to refresh · ? for help" />;
       }
       return <MilestoneList milestones={milestones} onFilteringChange={setIsFiltering} onMilestoneChanged={() => { refetchMs(); refetchIssues(); }} />;
     }
@@ -226,7 +226,7 @@ export function App() {
         );
       }
       if (runs.length === 0) {
-        return <EmptyState message="No workflow runs" />;
+        return <EmptyState message="No workflow runs" hint="r to refresh · ? for help" />;
       }
       return <RunList runs={runs} onFilteringChange={setIsFiltering} onRunChanged={refetchRuns} loadMore={loadMoreRuns} hasMore={hasMoreRuns} loadingMore={loadingMoreRuns} />;
     }
@@ -248,7 +248,7 @@ export function App() {
         );
       }
       if (releases.length === 0) {
-        return <EmptyState message="No releases" />;
+        return <EmptyState message="No releases" hint="r to refresh · ? for help" />;
       }
       return <ReleaseList releases={releases} username={username} onFilteringChange={setIsFiltering} loadMore={loadMoreReleases} hasMore={hasMoreReleases} loadingMore={loadingMoreReleases} />;
     }
@@ -270,7 +270,7 @@ export function App() {
         );
       }
       if (commits.length === 0) {
-        return <EmptyState message="No commits" />;
+        return <EmptyState message="No commits" hint="r to refresh · ? for help" />;
       }
       return <CommitList commits={commits} username={username} onFilteringChange={setIsFiltering} />;
     }
@@ -292,7 +292,7 @@ export function App() {
         );
       }
       if (notifications.length === 0) {
-        return <EmptyState message="No notifications" />;
+        return <EmptyState message="No notifications" hint="r to refresh · u toggle unread · ? for help" />;
       }
       return <NotificationList notifications={notifications} onFilteringChange={setIsFiltering} onNotificationChanged={refetchNotif} loadMore={loadMoreNotif} hasMore={hasMoreNotif} loadingMore={loadingMoreNotif} />;
     }
@@ -314,7 +314,7 @@ export function App() {
         );
       }
       if (branches.length === 0) {
-        return <EmptyState message="No branches" />;
+        return <EmptyState message="No branches" hint="r to refresh · ? for help" />;
       }
       return <BranchList branches={branches} username={username} onFilteringChange={setIsFiltering} />;
     }
