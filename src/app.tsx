@@ -328,7 +328,7 @@ export function App() {
       <Box marginTop={1} flexDirection="column" flexGrow={1} overflow="hidden">
         {showHelp ? <HelpOverlay onClose={() => setShowHelp(false)} /> : renderView()}
       </Box>
-      {initialReady.current && !showHelp && !isCreatingIssue && !editingIssue && <Footer activeView={activeView} />}
+      {initialReady.current && !showHelp && !isCreatingIssue && !editingIssue && <Footer activeView={activeView} isFiltering={isFiltering} />}
     </Box>
   );
 }

@@ -3,43 +3,98 @@ import type { View } from "../lib/types.js";
 
 interface FooterProps {
   activeView: View;
+  isFiltering?: boolean;
 }
 
-const DASHBOARD_HINTS = ["tab switch view", "1-8 jump", "r refresh", "? help"];
-const LIST_HINTS = ["/ filter", "s sort", "m mine", "d detail", "o open", "? help"];
-const ACTION_HINTS = ["/ filter", "s sort", "R re-run", "d detail", "o open", "? help"];
-const ISSUE_HINTS = ["/ filter", "s sort", "m mine", "Space mark", "c create", "e edit", "x close", "l labels", "A assign", "C comment", "d detail", "o open", "? help"];
-const PR_HINTS = ["/ filter", "s sort", "m mine", "Space mark", "f files", "M merge", "x close", "a approve", "X changes", "l labels", "A assign", "C comment", "d detail", "o open", "? help"];
-const MILESTONE_HINTS = ["/ filter", "s sort", "x close", "d detail", "i issues", "o open", "? help"];
-const RELEASE_HINTS = ["/ filter", "s sort", "m mine", "f type", "d detail", "o open", "? help"];
-const COMMIT_HINTS = ["/ filter", "s sort", "m mine", "d detail", "o open", "? help"];
-const NOTIFICATION_HINTS = ["/ filter", "s sort", "u unread", "n mark read", "d detail", "o open", "? help"];
-const BRANCH_HINTS = ["/ filter", "s sort", "m mine", "d detail", "? help"];
+interface HintGroup {
+  label: string;
+  hints: string[];
+}
 
-export function Footer({ activeView }: FooterProps) {
-  const hints = activeView === "dashboard"
-    ? DASHBOARD_HINTS
-    : activeView === "releases"
-      ? RELEASE_HINTS
-      : activeView === "commits"
-        ? COMMIT_HINTS
-        : activeView === "notifications"
-          ? NOTIFICATION_HINTS
-          : activeView === "issues"
-          ? ISSUE_HINTS
-          : activeView === "prs"
-            ? PR_HINTS
-            : activeView === "milestones"
-              ? MILESTONE_HINTS
-              : activeView === "actions"
-                ? ACTION_HINTS
-                : activeView === "branches"
-                  ? BRANCH_HINTS
-                  : LIST_HINTS;
+const FILTER_ACTIVE_GROUPS: HintGroup[] = [
+  { label: "Filter", hints: ["type to search", "Enter confirm", "Esc clear"] },
+];
+
+const DASHBOARD_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["tab switch", "1-8 jump"] },
+  { label: "Global", hints: ["r refresh", "? help"] },
+];
+
+const ISSUE_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["↑↓ jk", "/ filter", "s sort", "m mine"] },
+  { label: "Actions", hints: ["c create", "e edit", "x close", "l labels", "A assign", "C comment"] },
+  { label: "View", hints: ["Space mark", "d detail", "o open", "? help"] },
+];
+
+const PR_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["↑↓ jk", "/ filter", "s sort", "m mine"] },
+  { label: "Actions", hints: ["f files", "M merge", "x close", "a approve", "X changes", "l labels", "A assign", "C comment"] },
+  { label: "View", hints: ["Space mark", "d detail", "o open", "? help"] },
+];
+
+const ACTION_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["↑↓ jk", "/ filter", "s sort"] },
+  { label: "Actions", hints: ["R re-run"] },
+  { label: "View", hints: ["d detail", "o open", "? help"] },
+];
+
+const MILESTONE_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["↑↓ jk", "/ filter", "s sort"] },
+  { label: "Actions", hints: ["x close", "i issues"] },
+  { label: "View", hints: ["d detail", "o open", "? help"] },
+];
+
+const RELEASE_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["↑↓ jk", "/ filter", "s sort", "m mine"] },
+  { label: "Actions", hints: ["f type"] },
+  { label: "View", hints: ["d detail", "o open", "? help"] },
+];
+
+const COMMIT_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["↑↓ jk", "/ filter", "s sort", "m mine"] },
+  { label: "View", hints: ["d detail", "o open", "? help"] },
+];
+
+const NOTIFICATION_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["↑↓ jk", "/ filter", "s sort"] },
+  { label: "Actions", hints: ["u unread", "n mark read"] },
+  { label: "View", hints: ["d detail", "o open", "? help"] },
+];
+
+const BRANCH_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["↑↓ jk", "/ filter", "s sort", "m mine"] },
+  { label: "View", hints: ["d detail", "? help"] },
+];
+
+const LIST_GROUPS: HintGroup[] = [
+  { label: "Nav", hints: ["↑↓ jk", "/ filter", "s sort", "m mine"] },
+  { label: "View", hints: ["d detail", "o open", "? help"] },
+];
+
+const VIEW_GROUPS: Record<View, HintGroup[]> = {
+  dashboard: DASHBOARD_GROUPS,
+  issues: ISSUE_GROUPS,
+  prs: PR_GROUPS,
+  actions: ACTION_GROUPS,
+  milestones: MILESTONE_GROUPS,
+  releases: RELEASE_GROUPS,
+  commits: COMMIT_GROUPS,
+  notifications: NOTIFICATION_GROUPS,
+  branches: BRANCH_GROUPS,
+};
+
+export function Footer({ activeView, isFiltering }: FooterProps) {
+  const groups = isFiltering ? FILTER_ACTIVE_GROUPS : (VIEW_GROUPS[activeView] ?? LIST_GROUPS);
 
   return (
-    <Box paddingX={1}>
-      <Text dimColor>{hints.join(" · ")}</Text>
+    <Box paddingX={1} gap={1}>
+      {groups.map((group, i) => (
+        <Box key={group.label}>
+          {i > 0 && <Text dimColor> | </Text>}
+          <Text bold dimColor>{group.label}: </Text>
+          <Text dimColor>{group.hints.join("  ")}</Text>
+        </Box>
+      ))}
     </Box>
   );
 }
