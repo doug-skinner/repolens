@@ -112,6 +112,7 @@ export function App() {
           runs={runs}
           milestones={milestones}
           releases={releases}
+          commits={commits}
           loading={anyLoading}
         />
       );

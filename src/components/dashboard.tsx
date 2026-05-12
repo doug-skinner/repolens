@@ -1,8 +1,8 @@
 import { Box, Text } from "ink";
-import { timeAgo, truncate } from "../lib/format.js";
+import { timeAgo, truncate, sparkline, bucketByDay } from "../lib/format.js";
 import { useConfig, useTheme } from "../lib/config-context.js";
 import type { DashboardSection } from "../lib/config.js";
-import type { PullRequest, Issue, WorkflowRun, Milestone, Release } from "../lib/types.js";
+import type { PullRequest, Issue, WorkflowRun, Milestone, Release, Commit } from "../lib/types.js";
 import type { ReactNode } from "react";
 
 interface DashboardProps {
@@ -11,8 +11,11 @@ interface DashboardProps {
   runs: WorkflowRun[];
   milestones: Milestone[];
   releases: Release[];
+  commits: Commit[];
   loading: boolean;
 }
+
+const TREND_DAYS = 14;
 
 function SectionHeader({ label, keyHint }: { label: string; keyHint: string }) {
   const theme = useTheme();
@@ -33,6 +36,7 @@ const VIEW_KEY_HINTS: Record<DashboardSection, string> = {
 
 function PrSection({ prs }: { prs: PullRequest[] }) {
   const theme = useTheme();
+  const trend = sparkline(bucketByDay(prs.map((p) => p.createdAt), TREND_DAYS));
   return (
     <Box flexDirection="column">
       <SectionHeader label="Pull Requests" keyHint={VIEW_KEY_HINTS.prs} />
@@ -40,6 +44,7 @@ function PrSection({ prs }: { prs: PullRequest[] }) {
         <Text color={theme.success} bold>{prs.length}</Text>
         <Text dimColor> open</Text>
       </Text>
+      <Text dimColor>{trend} <Text dimColor>{TREND_DAYS}d</Text></Text>
       {prs.slice(0, 3).map((pr) => (
         <Text key={pr.number} dimColor>
           #{pr.number} {truncate(pr.title, 48)}
@@ -51,6 +56,7 @@ function PrSection({ prs }: { prs: PullRequest[] }) {
 
 function IssueSection({ issues }: { issues: Issue[] }) {
   const theme = useTheme();
+  const trend = sparkline(bucketByDay(issues.map((i) => i.createdAt), TREND_DAYS));
   return (
     <Box flexDirection="column">
       <SectionHeader label="Issues" keyHint={VIEW_KEY_HINTS.issues} />
@@ -58,6 +64,7 @@ function IssueSection({ issues }: { issues: Issue[] }) {
         <Text color={theme.warning} bold>{issues.length}</Text>
         <Text dimColor> open</Text>
       </Text>
+      <Text dimColor>{trend} <Text dimColor>{TREND_DAYS}d</Text></Text>
       {issues.slice(0, 3).map((issue) => (
         <Text key={issue.number} dimColor>
           #{issue.number} {truncate(issue.title, 48)}
@@ -67,11 +74,12 @@ function IssueSection({ issues }: { issues: Issue[] }) {
   );
 }
 
-function ActionsSection({ runs }: { runs: WorkflowRun[] }) {
+function ActionsSection({ runs, commits }: { runs: WorkflowRun[]; commits: Commit[] }) {
   const theme = useTheme();
   const passed = runs.filter((r) => r.conclusion === "success").length;
   const failed = runs.filter((r) => r.conclusion === "failure").length;
   const running = runs.filter((r) => r.status === "in_progress").length;
+  const commitTrend = sparkline(bucketByDay(commits.map((c) => c.date), TREND_DAYS));
 
   return (
     <Box flexDirection="column">
@@ -93,6 +101,7 @@ function ActionsSection({ runs }: { runs: WorkflowRun[] }) {
           {truncate(run.displayTitle, 44)} <Text>{timeAgo(run.createdAt)}</Text>
         </Text>
       ))}
+      <Text dimColor>commits {commitTrend} {TREND_DAYS}d</Text>
     </Box>
   );
 }
@@ -155,7 +164,7 @@ function ReleaseSection({ releases }: { releases: Release[] }) {
   );
 }
 
-export function Dashboard({ prs, issues, runs, milestones, releases, loading }: DashboardProps) {
+export function Dashboard({ prs, issues, runs, milestones, releases, commits, loading }: DashboardProps) {
   const { dashboard } = useConfig();
 
   if (loading && prs.length === 0 && issues.length === 0) {
@@ -170,7 +179,7 @@ export function Dashboard({ prs, issues, runs, milestones, releases, loading }: 
   const sectionMap: Record<DashboardSection, ReactNode> = {
     prs: <PrSection prs={prs} />,
     issues: <IssueSection issues={issues} />,
-    actions: <ActionsSection runs={runs} />,
+    actions: <ActionsSection runs={runs} commits={commits} />,
     milestones: <MilestoneSection milestones={milestones} />,
     releases: <ReleaseSection releases={releases} />,
   };
