@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Box, Text } from "ink";
 import { IssueRow } from "./issue-row.js";
 import { DetailPane } from "./detail-pane.js";
@@ -32,6 +32,9 @@ interface IssueListProps {
   onCreateIssue?: () => void;
   onEditIssue?: (issue: Issue) => void;
   onIssueChanged?: () => void;
+  loadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
@@ -82,7 +85,7 @@ function IssueDetail({ issue, height }: { issue: Issue; height: number }) {
   );
 }
 
-export function IssueList({ issues, username, onFilteringChange, onCreateIssue, onEditIssue, onIssueChanged }: IssueListProps) {
+export function IssueList({ issues, username, onFilteringChange, onCreateIssue, onEditIssue, onIssueChanged, loadMore, hasMore, loadingMore }: IssueListProps) {
   const { staleDays } = useConfig();
   const filter = useListFilter(onFilteringChange);
   const comment = useCommentInput(onFilteringChange);
@@ -235,6 +238,13 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
     useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onToggleMark, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirmClose || !!picker });
   selectedIndexRef.current = selectedIndex;
+
+  useEffect(() => {
+    if (hasMore && !loadingMore && sorted.length > 0 && selectedIndex >= sorted.length - 5) {
+      loadMore?.();
+    }
+  }, [selectedIndex, sorted.length, hasMore, loadingMore, loadMore]);
+
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -271,6 +281,7 @@ export function IssueList({ issues, username, onFilteringChange, onCreateIssue, 
         {visible.map((issue, i) => (
           <IssueRow key={issue.number} issue={issue} selected={scrollOffset + i === selectedIndex} marked={markedNumbers.has(issue.number)} stale={isStale(issue.createdAt, staleDays)} />
         ))}
+        {loadingMore && <Text dimColor> Loading more…</Text>}
       </Box>
       {showDetail && selected && (
         <IssueDetail issue={selected} height={detailHeight} />

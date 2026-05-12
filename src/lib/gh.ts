@@ -29,9 +29,9 @@ export async function fetchAuthenticatedUser(): Promise<string> {
   return result.text().trim();
 }
 
-export async function fetchPullRequests(): Promise<PullRequest[]> {
+export async function fetchPullRequests(limit: number = 30): Promise<PullRequest[]> {
   const result =
-    await $`gh pr list --json ${PR_FIELDS} --limit 30`.quiet();
+    await $`gh pr list --json ${PR_FIELDS} --limit ${limit}`.quiet();
   return result.json();
 }
 
@@ -61,9 +61,9 @@ const ISSUE_FIELDS = [
   "url",
 ].join(",");
 
-export async function fetchIssues(): Promise<Issue[]> {
+export async function fetchIssues(limit: number = 30): Promise<Issue[]> {
   const result =
-    await $`gh issue list --json ${ISSUE_FIELDS} --limit 30`.quiet();
+    await $`gh issue list --json ${ISSUE_FIELDS} --limit ${limit}`.quiet();
   return result.json();
 }
 
@@ -203,9 +203,9 @@ const RUN_FIELDS = [
   "url",
 ].join(",");
 
-export async function fetchWorkflowRuns(): Promise<WorkflowRun[]> {
+export async function fetchWorkflowRuns(limit: number = 30): Promise<WorkflowRun[]> {
   const result =
-    await $`gh run list --json ${RUN_FIELDS} --limit 30`.quiet();
+    await $`gh run list --json ${RUN_FIELDS} --limit ${limit}`.quiet();
   return result.json();
 }
 
@@ -231,11 +231,20 @@ interface RawRelease {
   assets: { download_count: number }[];
 }
 
-export async function fetchReleases(): Promise<Release[]> {
-  const result = await $`gh api repos/{owner}/{repo}/releases?per_page=30`.quiet();
-  const raw: RawRelease[] = JSON.parse(result.text());
+export async function fetchReleases(limit: number = 30): Promise<Release[]> {
+  const allRaw: RawRelease[] = [];
+  let page = 1;
+  while (allRaw.length < limit) {
+    const perPage = Math.min(limit - allRaw.length, 100);
+    const result = await $`gh api repos/{owner}/{repo}/releases?per_page=${perPage}&page=${page}`.quiet();
+    const batch: RawRelease[] = JSON.parse(result.text());
+    if (batch.length === 0) break;
+    allRaw.push(...batch);
+    if (batch.length < perPage) break;
+    page++;
+  }
   let foundLatest = false;
-  return raw.map((r) => {
+  return allRaw.slice(0, limit).map((r) => {
     const isLatest = !foundLatest && !r.draft && !r.prerelease;
     if (isLatest) foundLatest = true;
     return {
@@ -291,10 +300,19 @@ interface RawNotification {
   updated_at: string;
 }
 
-export async function fetchNotifications(): Promise<GitHubNotification[]> {
-  const result = await $`gh api repos/{owner}/{repo}/notifications?per_page=50`.quiet();
-  const raw: RawNotification[] = JSON.parse(result.text());
-  return raw.map((n) => ({
+export async function fetchNotifications(limit: number = 50): Promise<GitHubNotification[]> {
+  const allRaw: RawNotification[] = [];
+  let page = 1;
+  while (allRaw.length < limit) {
+    const perPage = Math.min(limit - allRaw.length, 100);
+    const result = await $`gh api repos/{owner}/{repo}/notifications?per_page=${perPage}&page=${page}`.quiet();
+    const batch: RawNotification[] = JSON.parse(result.text());
+    if (batch.length === 0) break;
+    allRaw.push(...batch);
+    if (batch.length < perPage) break;
+    page++;
+  }
+  return allRaw.slice(0, limit).map((n) => ({
     id: n.id,
     unread: n.unread,
     reason: n.reason,

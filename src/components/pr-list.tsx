@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Box, Text } from "ink";
 import { PrRow } from "./pr-row.js";
 import { PrDiffView } from "./pr-diff-view.js";
@@ -32,6 +32,9 @@ interface PrListProps {
   username: string | null;
   onFilteringChange?: (editing: boolean) => void;
   onPrChanged?: () => void;
+  loadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
@@ -88,7 +91,7 @@ function PrDetail({ pr, height }: { pr: PullRequest; height: number }) {
   );
 }
 
-export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrListProps) {
+export function PrList({ prs, username, onFilteringChange, onPrChanged, loadMore, hasMore, loadingMore }: PrListProps) {
   const { staleDays } = useConfig();
   const filter = useListFilter(onFilteringChange);
   const comment = useCommentInput(onFilteringChange);
@@ -312,6 +315,13 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
     useListNavigation(sorted.length, { onOpen, onYank, onYankRef, onToggleMark, onStartComment, onCommentSubmit, filter, comment, extraKeys, resetTrigger: `${mine}:${sort.current}`, inputBlocked: !!confirm || !!merge || !!picker });
   selectedIndexRef.current = selectedIndex;
+
+  useEffect(() => {
+    if (hasMore && !loadingMore && sorted.length > 0 && selectedIndex >= sorted.length - 5) {
+      loadMore?.();
+    }
+  }, [selectedIndex, sorted.length, hasMore, loadingMore, loadMore]);
+
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -384,6 +394,7 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
         {visible.map((pr, i) => (
           <PrRow key={pr.number} pr={pr} selected={scrollOffset + i === selectedIndex} marked={markedNumbers.has(pr.number)} stale={isStale(pr.createdAt, staleDays)} />
         ))}
+        {loadingMore && <Text dimColor> Loading more…</Text>}
       </Box>
       {showDetail && selected && (
         <PrDetail pr={selected} height={detailHeight} />

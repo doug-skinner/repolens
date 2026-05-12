@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Box, Text } from "ink";
 import { NotificationRow } from "./notification-row.js";
 import { Breadcrumb } from "./breadcrumb.js";
@@ -15,6 +15,9 @@ interface NotificationListProps {
   notifications: GitHubNotification[];
   onFilteringChange?: (editing: boolean) => void;
   onNotificationChanged?: () => void;
+  loadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 const SORT_OPTIONS = [
@@ -22,7 +25,7 @@ const SORT_OPTIONS = [
   { key: "oldest", label: "Oldest" },
 ] as const;
 
-export function NotificationList({ notifications, onFilteringChange, onNotificationChanged }: NotificationListProps) {
+export function NotificationList({ notifications, onFilteringChange, onNotificationChanged, loadMore, hasMore, loadingMore }: NotificationListProps) {
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -69,6 +72,13 @@ export function NotificationList({ notifications, onFilteringChange, onNotificat
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight: _detailHeight } =
     useListNavigation(sorted.length, { onOpen, filter, extraKeys, resetTrigger });
   selectedIndexRef.current = selectedIndex;
+
+  useEffect(() => {
+    if (hasMore && !loadingMore && sorted.length > 0 && selectedIndex >= sorted.length - 5) {
+      loadMore?.();
+    }
+  }, [selectedIndex, sorted.length, hasMore, loadingMore, loadMore]);
+
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -87,6 +97,7 @@ export function NotificationList({ notifications, onFilteringChange, onNotificat
         {visible.map((notification, i) => (
           <NotificationRow key={notification.id} notification={notification} selected={scrollOffset + i === selectedIndex} />
         ))}
+        {loadingMore && <Text dimColor> Loading more…</Text>}
       </Box>
       {showDetail && selected && (
         <Box flexDirection="column" paddingX={1} marginTop={1}>

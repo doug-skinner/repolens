@@ -1,8 +1,10 @@
-import { useGhData } from "./use-gh-data.js";
+import { useCallback } from "react";
+import { usePagedGhData } from "./use-paged-gh-data.js";
 import { fetchPullRequests } from "../lib/gh.js";
 import type { PullRequest } from "../lib/types.js";
 
 export function usePullRequests() {
-  const { data: prs, ...rest } = useGhData<PullRequest[]>(fetchPullRequests, []);
+  const fetchFn = useCallback((limit: number) => fetchPullRequests(limit), []);
+  const { data: prs, ...rest } = usePagedGhData<PullRequest>(fetchFn);
   return { prs, ...rest };
 }

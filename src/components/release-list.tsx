@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Box, Text } from "ink";
 import { ReleaseRow } from "./release-row.js";
 import { DetailPane } from "./detail-pane.js";
@@ -36,6 +36,9 @@ interface ReleaseListProps {
   releases: Release[];
   username: string | null;
   onFilteringChange?: (editing: boolean) => void;
+  loadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 function ReleaseDetail({ release, height }: { release: Release; height: number }) {
@@ -60,7 +63,7 @@ const SORT_OPTIONS = [
   { key: "downloads", label: "Downloads" },
 ] as const;
 
-export function ReleaseList({ releases, username, onFilteringChange }: ReleaseListProps) {
+export function ReleaseList({ releases, username, onFilteringChange, loadMore, hasMore, loadingMore }: ReleaseListProps) {
   const { staleDays } = useConfig();
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
@@ -98,6 +101,13 @@ export function ReleaseList({ releases, username, onFilteringChange }: ReleaseLi
   const onYankRef = useCallback((i: number) => copyToClipboard(sorted[i].tagName), [sorted]);
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
     useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger });
+
+  useEffect(() => {
+    if (hasMore && !loadingMore && sorted.length > 0 && selectedIndex >= sorted.length - 5) {
+      loadMore?.();
+    }
+  }, [selectedIndex, sorted.length, hasMore, loadingMore, loadMore]);
+
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -119,6 +129,7 @@ export function ReleaseList({ releases, username, onFilteringChange }: ReleaseLi
         {visible.map((release, i) => (
           <ReleaseRow key={release.tagName} release={release} selected={scrollOffset + i === selectedIndex} stale={isStale(release.publishedAt, staleDays)} />
         ))}
+        {loadingMore && <Text dimColor> Loading more…</Text>}
       </Box>
       {showDetail && selected && (
         <ReleaseDetail release={selected} height={detailHeight} />

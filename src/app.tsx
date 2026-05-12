@@ -31,13 +31,13 @@ import { VIEWS, type View } from "./lib/types.js";
 export function App() {
   const { exit } = useApp();
   const { stdout } = useStdout();
-  const { prs, loading: prsLoading, error: prsError, refetch: refetchPrs } = usePullRequests();
-  const { issues, loading: issuesLoading, error: issuesError, refetch: refetchIssues } = useIssues();
+  const { prs, loading: prsLoading, error: prsError, refetch: refetchPrs, loadMore: loadMorePrs, hasMore: hasMorePrs, loadingMore: loadingMorePrs } = usePullRequests();
+  const { issues, loading: issuesLoading, error: issuesError, refetch: refetchIssues, loadMore: loadMoreIssues, hasMore: hasMoreIssues, loadingMore: loadingMoreIssues } = useIssues();
   const { milestones, loading: msLoading, error: msError, refetch: refetchMs } = useMilestones();
-  const { runs, loading: runsLoading, error: runsError, refetch: refetchRuns } = useWorkflowRuns();
-  const { releases, loading: relLoading, error: relError, refetch: refetchRel } = useReleases();
+  const { runs, loading: runsLoading, error: runsError, refetch: refetchRuns, loadMore: loadMoreRuns, hasMore: hasMoreRuns, loadingMore: loadingMoreRuns } = useWorkflowRuns();
+  const { releases, loading: relLoading, error: relError, refetch: refetchRel, loadMore: loadMoreReleases, hasMore: hasMoreReleases, loadingMore: loadingMoreReleases } = useReleases();
   const { commits, loading: commitsLoading, error: commitsError, refetch: refetchCommits } = useCommits();
-  const { notifications, loading: notifLoading, error: notifError, refetch: refetchNotif } = useNotifications();
+  const { notifications, loading: notifLoading, error: notifError, refetch: refetchNotif, loadMore: loadMoreNotif, hasMore: hasMoreNotif, loadingMore: loadingMoreNotif } = useNotifications();
   const { branches, loading: branchesLoading, error: branchesError, refetch: refetchBranches } = useBranches();
   const { count: reviewRequestCount, refetch: refetchReviews } = useReviewRequests();
   const { repo } = useRepoInfo();
@@ -137,7 +137,7 @@ export function App() {
       if (prs.length === 0) {
         return <EmptyState message="No open pull requests" />;
       }
-      return <PrList prs={prs} username={username} onFilteringChange={setIsFiltering} onPrChanged={refetchPrs} />;
+      return <PrList prs={prs} username={username} onFilteringChange={setIsFiltering} onPrChanged={refetchPrs} loadMore={loadMorePrs} hasMore={hasMorePrs} loadingMore={loadingMorePrs} />;
     }
 
     if (activeView === "issues") {
@@ -184,7 +184,7 @@ export function App() {
       if (issues.length === 0) {
         return <EmptyState message="No open issues" />;
       }
-      return <IssueList issues={issues} username={username} onFilteringChange={setIsFiltering} onCreateIssue={() => setIsCreatingIssue(true)} onEditIssue={setEditingIssue} onIssueChanged={refetchIssues} />;
+      return <IssueList issues={issues} username={username} onFilteringChange={setIsFiltering} onCreateIssue={() => setIsCreatingIssue(true)} onEditIssue={setEditingIssue} onIssueChanged={refetchIssues} loadMore={loadMoreIssues} hasMore={hasMoreIssues} loadingMore={loadingMoreIssues} />;
     }
 
     if (activeView === "milestones") {
@@ -228,7 +228,7 @@ export function App() {
       if (runs.length === 0) {
         return <EmptyState message="No workflow runs" />;
       }
-      return <RunList runs={runs} onFilteringChange={setIsFiltering} onRunChanged={refetchRuns} />;
+      return <RunList runs={runs} onFilteringChange={setIsFiltering} onRunChanged={refetchRuns} loadMore={loadMoreRuns} hasMore={hasMoreRuns} loadingMore={loadingMoreRuns} />;
     }
 
     if (activeView === "releases") {
@@ -250,7 +250,7 @@ export function App() {
       if (releases.length === 0) {
         return <EmptyState message="No releases" />;
       }
-      return <ReleaseList releases={releases} username={username} onFilteringChange={setIsFiltering} />;
+      return <ReleaseList releases={releases} username={username} onFilteringChange={setIsFiltering} loadMore={loadMoreReleases} hasMore={hasMoreReleases} loadingMore={loadingMoreReleases} />;
     }
 
     if (activeView === "commits") {
@@ -294,7 +294,7 @@ export function App() {
       if (notifications.length === 0) {
         return <EmptyState message="No notifications" />;
       }
-      return <NotificationList notifications={notifications} onFilteringChange={setIsFiltering} onNotificationChanged={refetchNotif} />;
+      return <NotificationList notifications={notifications} onFilteringChange={setIsFiltering} onNotificationChanged={refetchNotif} loadMore={loadMoreNotif} hasMore={hasMoreNotif} loadingMore={loadingMoreNotif} />;
     }
 
     if (activeView === "branches") {

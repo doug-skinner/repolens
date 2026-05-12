@@ -26,6 +26,9 @@ interface RunListProps {
   runs: WorkflowRun[];
   onFilteringChange?: (editing: boolean) => void;
   onRunChanged?: () => void;
+  loadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
@@ -99,7 +102,7 @@ function RunDetail({ run, height }: { run: WorkflowRun; height: number }) {
   );
 }
 
-export function RunList({ runs, onFilteringChange, onRunChanged }: RunListProps) {
+export function RunList({ runs, onFilteringChange, onRunChanged, loadMore, hasMore, loadingMore }: RunListProps) {
   const { staleDays } = useConfig();
   const filter = useListFilter(onFilteringChange);
   const sort = useListSort(SORT_OPTIONS);
@@ -165,6 +168,13 @@ export function RunList({ runs, onFilteringChange, onRunChanged }: RunListProps)
   const { selectedIndex, scrollOffset, viewportHeight, showDetail, detailHeight } =
     useListNavigation(sorted.length, { onOpen, onYank, onYankRef, filter, extraKeys, resetTrigger: sort.current, inputBlocked: !!confirmRerun });
   selectedIndexRef.current = selectedIndex;
+
+  useEffect(() => {
+    if (hasMore && !loadingMore && sorted.length > 0 && selectedIndex >= sorted.length - 5) {
+      loadMore?.();
+    }
+  }, [selectedIndex, sorted.length, hasMore, loadingMore, loadMore]);
+
   const visible = sorted.slice(scrollOffset, scrollOffset + viewportHeight);
 
   const selected = sorted[selectedIndex];
@@ -186,6 +196,7 @@ export function RunList({ runs, onFilteringChange, onRunChanged }: RunListProps)
         {visible.map((run, i) => (
           <RunRow key={run.databaseId} run={run} selected={scrollOffset + i === selectedIndex} stale={isStale(run.createdAt, staleDays)} />
         ))}
+        {loadingMore && <Text dimColor> Loading more…</Text>}
       </Box>
       {showDetail && selected && (
         <RunDetail run={selected} height={detailHeight} />
