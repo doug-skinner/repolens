@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import type { Commit, GitHubNotification, Issue, Milestone, PullRequest, Release, RepoInfo, WorkflowJob, WorkflowRun } from "./types.js";
+import type { Branch, Commit, GitHubNotification, Issue, Milestone, PullRequest, Release, RepoInfo, WorkflowJob, WorkflowRun } from "./types.js";
 
 const PR_FIELDS = [
   "number",
@@ -340,6 +340,43 @@ export async function setPrAssignees(number: number, add: string[], remove: stri
   if (add.length) args.push("--add-assignee", add.join(","));
   if (remove.length) args.push("--remove-assignee", remove.join(","));
   if (args.length) await $`gh pr edit ${number} ${args}`.quiet();
+}
+
+export async function fetchBranches(): Promise<Branch[]> {
+  const defaultResult = await $`gh api repos/{owner}/{repo} --jq .default_branch`.quiet();
+  const defaultBranch = defaultResult.text().trim();
+
+  const SEP = "---BRANCH---";
+  const format = `${SEP}%0a%(refname:strip=3)%0a%(committerdate:iso8601)%0a%(authorname)%0a%(objectname:short)`;
+  const branchResult = await $`git for-each-ref --sort=-committerdate --format=${format} refs/remotes/origin/ --count=31`.quiet();
+  const raw = branchResult.text().trim();
+  if (!raw) return [];
+
+  const parsed = raw.split(SEP).filter(Boolean).map((block) => {
+    const lines = block.trim().split("\n");
+    return { name: lines[0], lastCommitDate: lines[1], lastCommitAuthor: lines[2], lastCommitHash: lines[3] };
+  }).filter((b) => b.name !== "HEAD");
+
+  const branches = await Promise.all(parsed.map(async (b) => {
+    let ahead = 0;
+    let behind = 0;
+    if (b.name !== defaultBranch) {
+      try {
+        const countResult = await $`git rev-list --left-right --count origin/${defaultBranch}...origin/${b.name}`.quiet();
+        const parts = countResult.text().trim().split("\t");
+        behind = Number(parts[0]);
+        ahead = Number(parts[1]);
+      } catch { /* branch may have diverged history */ }
+    }
+    return { ...b, ahead, behind, isDefault: b.name === defaultBranch };
+  }));
+
+  return branches;
+}
+
+export async function fetchPrDiff(number: number): Promise<string> {
+  const result = await $`gh pr diff ${number}`.quiet();
+  return result.text();
 }
 
 export async function fetchReviewRequestCount(): Promise<number> {

@@ -14,7 +14,7 @@ const SECTIONS = [
       ["r", "Refresh all data"],
       ["Tab", "Next view"],
       ["Shift+Tab", "Previous view"],
-      ["1–8", "Jump to view"],
+      ["1–9", "Jump to view"],
     ],
   },
   {
@@ -54,6 +54,7 @@ const SECTIONS = [
   {
     title: "Pull Requests",
     bindings: [
+      ["f", "View file diff"],
       ["M", "Merge (pick strategy)"],
       ["x", "Close selected PR"],
       ["a", "Approve selected PR"],

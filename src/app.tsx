@@ -10,6 +10,7 @@ import { RunList } from "./components/run-list.js";
 import { ReleaseList } from "./components/release-list.js";
 import { CommitList } from "./components/commit-list.js";
 import { NotificationList } from "./components/notification-list.js";
+import { BranchList } from "./components/branch-list.js";
 import { EmptyState } from "./components/empty-state.js";
 import { HelpOverlay } from "./components/help-overlay.js";
 import { Footer } from "./components/footer.js";
@@ -20,6 +21,7 @@ import { useWorkflowRuns } from "./hooks/use-workflow-runs.js";
 import { useReleases } from "./hooks/use-releases.js";
 import { useCommits } from "./hooks/use-commits.js";
 import { useNotifications } from "./hooks/use-notifications.js";
+import { useBranches } from "./hooks/use-branches.js";
 import { useReviewRequests } from "./hooks/use-review-requests.js";
 import { useRepoInfo } from "./hooks/use-repo-info.js";
 import { useAuthUser } from "./hooks/use-auth-user.js";
@@ -36,11 +38,12 @@ export function App() {
   const { releases, loading: relLoading, error: relError, refetch: refetchRel } = useReleases();
   const { commits, loading: commitsLoading, error: commitsError, refetch: refetchCommits } = useCommits();
   const { notifications, loading: notifLoading, error: notifError, refetch: refetchNotif } = useNotifications();
+  const { branches, loading: branchesLoading, error: branchesError, refetch: refetchBranches } = useBranches();
   const { count: reviewRequestCount, refetch: refetchReviews } = useReviewRequests();
   const { repo } = useRepoInfo();
   const { username } = useAuthUser();
   const initialReady = useRef(false);
-  if (!initialReady.current && !prsLoading && !issuesLoading && !msLoading && !runsLoading && !relLoading && !commitsLoading && !notifLoading) {
+  if (!initialReady.current && !prsLoading && !issuesLoading && !msLoading && !runsLoading && !relLoading && !commitsLoading && !notifLoading && !branchesLoading) {
     initialReady.current = true;
   }
 
@@ -58,8 +61,9 @@ export function App() {
     refetchRel();
     refetchCommits();
     refetchNotif();
+    refetchBranches();
     refetchReviews();
-  }, [refetchPrs, refetchIssues, refetchMs, refetchRuns, refetchRel, refetchCommits, refetchNotif, refetchReviews]);
+  }, [refetchPrs, refetchIssues, refetchMs, refetchRuns, refetchRel, refetchCommits, refetchNotif, refetchBranches, refetchReviews]);
 
   const { lastRefreshedAt, refreshNow } = useAutoRefresh({ refetch: refetchAll, paused: showHelp });
 
@@ -290,6 +294,28 @@ export function App() {
         return <EmptyState message="No notifications" />;
       }
       return <NotificationList notifications={notifications} onFilteringChange={setIsFiltering} onNotificationChanged={refetchNotif} />;
+    }
+
+    if (activeView === "branches") {
+      if (branchesLoading) {
+        return (
+          <Box gap={1} paddingX={1}>
+            <Text>⏳</Text>
+            <Text>Loading branches…</Text>
+          </Box>
+        );
+      }
+      if (branchesError) {
+        return (
+          <Box paddingX={1}>
+            <Text color="red">{branchesError}</Text>
+          </Box>
+        );
+      }
+      if (branches.length === 0) {
+        return <EmptyState message="No branches" />;
+      }
+      return <BranchList branches={branches} username={username} onFilteringChange={setIsFiltering} />;
     }
 
     return null;

@@ -123,9 +123,19 @@ export interface GitHubNotification {
   url: string | null;
 }
 
+export interface Branch {
+  name: string;
+  lastCommitDate: string;
+  lastCommitAuthor: string;
+  lastCommitHash: string;
+  ahead: number;
+  behind: number;
+  isDefault: boolean;
+}
+
 export type CheckSummary = "pass" | "fail" | "pending" | "running" | "none";
 
-export const VIEWS = ["dashboard", "prs", "issues", "actions", "milestones", "releases", "commits", "notifications"] as const;
+export const VIEWS = ["dashboard", "prs", "issues", "actions", "milestones", "releases", "commits", "notifications", "branches"] as const;
 export type View = (typeof VIEWS)[number];
 
 export const VIEW_LABELS: Record<View, string> = {
@@ -137,4 +147,5 @@ export const VIEW_LABELS: Record<View, string> = {
   releases: "Releases",
   commits: "Commits",
   notifications: "Notifications",
+  branches: "Branches",
 };

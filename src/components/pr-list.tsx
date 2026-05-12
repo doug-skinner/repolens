@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import { Box, Text } from "ink";
 import { PrRow } from "./pr-row.js";
+import { PrDiffView } from "./pr-diff-view.js";
 import { DetailPane } from "./detail-pane.js";
 import { Breadcrumb } from "./breadcrumb.js";
 import { FilterInput } from "./filter-input.js";
@@ -8,7 +9,7 @@ import { CommentInput } from "./comment-input.js";
 import { ConfirmBar } from "./confirm-bar.js";
 import { MergeBar, type MergeStrategy } from "./merge-bar.js";
 import { PickerOverlay } from "./picker-overlay.js";
-import { openPrInBrowser, commentOnPr, mergePr, closePr, approvePr, requestChangesPr, fetchLabels, fetchCollaborators, setPrLabels, setPrAssignees } from "../lib/gh.js";
+import { openPrInBrowser, commentOnPr, mergePr, closePr, approvePr, requestChangesPr, fetchLabels, fetchCollaborators, setPrLabels, setPrAssignees, fetchPrDiff } from "../lib/gh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { useListNavigation } from "../hooks/use-list-navigation.js";
 import { useListFilter } from "../hooks/use-list-filter.js";
@@ -101,6 +102,9 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
   const [merge, setMerge] = useState<{ number: number; title: string } | null>(null);
   const [mergeStatus, setMergeStatus] = useState<"choosing" | "working" | "success" | "error">("choosing");
   const commentModeRef = useRef<"comment" | "request-changes">("comment");
+
+  const [diffView, setDiffView] = useState<{ number: number; title: string; diff: string } | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
 
   const [picker, setPicker] = useState<{ kind: "labels" | "assignees"; targets: number[]; current: Set<string> } | null>(null);
   const [pickerOptions, setPickerOptions] = useState<string[]>([]);
@@ -252,6 +256,18 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
     onFilteringChange?.(false);
   }, [onFilteringChange]);
 
+  const openDiff = useCallback(async (i: number) => {
+    const pr = sorted[i];
+    if (!pr || diffLoading) return;
+    setDiffLoading(true);
+    onFilteringChange?.(true);
+    try {
+      const diff = await fetchPrDiff(pr.number);
+      setDiffView({ number: pr.number, title: pr.title, diff });
+    } catch { /* silently fail */ }
+    setDiffLoading(false);
+  }, [sorted, diffLoading, onFilteringChange]);
+
   const startRequestChanges = useCallback((i: number) => {
     const pr = sorted[i];
     if (!pr) return;
@@ -263,13 +279,14 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
   const extraKeys = useMemo(() => ({
     s: sort.cycleSort,
     m: toggleMine,
+    f: () => openDiff(selectedIndexRef.current),
     M: () => startMerge(selectedIndexRef.current),
     x: () => startConfirm("close", selectedIndexRef.current),
     a: () => startConfirm("approve", selectedIndexRef.current),
     X: () => startRequestChanges(selectedIndexRef.current),
     l: () => openPicker("labels", selectedIndexRef.current),
     A: () => openPicker("assignees", selectedIndexRef.current),
-  }), [sort.cycleSort, toggleMine, startMerge, startConfirm, startRequestChanges, openPicker]);
+  }), [sort.cycleSort, toggleMine, openDiff, startMerge, startConfirm, startRequestChanges, openPicker]);
 
   const onOpen = useCallback((i: number) => openPrInBrowser(sorted[i].number), [sorted]);
   const onYank = useCallback((i: number) => copyToClipboard(sorted[i].url), [sorted]);
@@ -314,9 +331,26 @@ export function PrList({ prs, username, onFilteringChange, onPrChanged }: PrList
         : `${confirmLabel} ${confirm.title}?`
     : "";
 
+  if (diffView) {
+    return (
+      <PrDiffView
+        prNumber={diffView.number}
+        prTitle={diffView.title}
+        diff={diffView.diff}
+        onClose={() => { setDiffView(null); onFilteringChange?.(false); }}
+      />
+    );
+  }
+
   return (
     <Box flexDirection="column">
       <Breadcrumb view={viewLabel} detail={showDetail && selected ? `#${selected.number} ${selected.title}` : undefined} />
+      {diffLoading && (
+        <Box gap={1} paddingX={1}>
+          <Text>⏳</Text>
+          <Text dimColor>Loading diff…</Text>
+        </Box>
+      )}
       <FilterInput query={filter.filterQuery} isEditing={filter.isEditing} resultCount={sorted.length} totalCount={prs.length} />
       <CommentInput targetLabel={comment.targetLabel} text={comment.commentText} isEditing={comment.isEditing} status={comment.status} />
       {picker && (
